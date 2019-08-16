@@ -11,7 +11,7 @@ int appInit(void);
 #define DD_NUM_OF_AB 0
 
 #define DD_NUM_OF_LD 1
-#define DD_NUM_OF_SS 0
+#define DD_NUM_OF_SS 2
 #define DD_USE_ENCODER1 1
 #define DD_USE_ENCODER2 1
 #define DD_NUM_OF_SV 0
@@ -32,6 +32,14 @@ int appInit(void);
 #define _ENCODER2_RESET_GPIOPIN GPIO_PIN_1
 #define _IS_PRESSED_ENCODER2_RESET() ((MW_GPIORead(_ENCODER2_RESET_GPIOID,_ENCODER2_RESET_GPIOPIN)))
 
+#define I2C_ENCODER_1 1
+#define I2C_ENCODER_2 0
+
+#define RIGHT_ENC 0
+#define BACK_ENC 1
+#define LEFT_ENC 2
+#define FRONT_ENC 3
+
 #define MECHA1_MD1 2
 #define MECHA1_MD2 3
 #define CENTRAL_THRESHOLD 4
@@ -46,6 +54,7 @@ int appInit(void);
 typedef enum{
   GET_ENCODER_VALUE = 0,
   RESET_ENCODER_VALUE = 1,
+  GET_DIFF = 2,
 }EncoderOperation_t;
 
 #endif

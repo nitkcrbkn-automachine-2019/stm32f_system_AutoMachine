@@ -55,31 +55,36 @@ DD_SSHand_t g_ss_h[DD_NUM_OF_SS] = {
     .data = {0,0,0,0,0,0,0,0},
     .type = D_STYP_ENCODER,
   },
-  { .add = 0x36,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
+  { .add = 0x1c,    /*I2C address*/
+    .data_size = 8, /*最大8バイト 無駄なく宣言する*/
     .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
+    .type = D_STYP_ENCODER,
   },
-  { .add = 0x38,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
+  /* { .add = 0x36,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
+  /* { .add = 0x38,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
   /* { .add = 0x1c,    /\*I2C address*\/ */
   /*   .data_size = 8, /\*最大8バイト 無駄なく宣言する*\/ */
   /*   .data = {0,0,0,0,0,0,0,0}, */
   /*   .type = D_STYP_ENCODER, */
   /* }, */
-  { .add = 0x53,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
-  { .add = 0x51,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
+  /* { .add = 0x53,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
+  /* { .add = 0x51,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
   
 };
 #endif

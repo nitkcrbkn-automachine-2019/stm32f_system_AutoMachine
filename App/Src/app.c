@@ -4,6 +4,7 @@
 #include "SystemTaskManager.h"
 #include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include "MW_GPIO.h"
 #include "MW_IWDG.h"
 #include "message.h"
@@ -27,6 +28,10 @@ static
 int steering_2_init(void);
 static
 int get_diff(int target,int now_degree,int encoder_ppr);
+static
+int odmetry_position(double position[3]);
+static
+void fill_array(double array1[], double array2[], int size);
 /*suspensionSystem*/
 static
 int suspensionSystem(void);
@@ -57,6 +62,7 @@ int appTask(void){
 
   static bool encoder1_reset = false;
   static bool encoder2_reset = false;
+  static double position[3];
   
   if(__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_R2(g_rc_data)&&
      __RC_ISPRESSED_L1(g_rc_data)&&__RC_ISPRESSED_L2(g_rc_data)){
@@ -100,22 +106,22 @@ int appTask(void){
   if(ret){
     return ret;
   }
-  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-    MW_printf("Encoder_target[%3d]\n",target);
-    if(encoder1_reset){
-      MW_printf("encoder1_reset[true ]\n");
-    }else{
-      MW_printf("encoder1_reset[false]\n");
-    }
-    if(encoder2_reset){
-      MW_printf("encoder2_reset[true ]\n");
-    }else{
-      MW_printf("encoder2_reset[false]\n");
-    }
+
+
+  ret = odmetry_position(position);
+  if(ret){
+    return ret;
   }
-  
   /*それぞれの機構ごとに処理をする*/
   /*途中必ず定数回で終了すること。*/
+
+  if(__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_L1(g_rc_data)){
+    I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE);
+    I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE);
+    I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE);
+    I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE);
+  }
+  
   ret = suspensionSystem();
   if(ret){
     return ret;
@@ -129,6 +135,22 @@ int appTask(void){
   ret = LEDSystem();
   if(ret){
     return ret;
+  }
+
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("now_position[x][y][w] : [%10d][%10d][%10d]\n",(int)position[0],(int)position[1],(int)position[2]);
+
+    MW_printf("Encoder_target[%3d]\n",target);
+    if(encoder1_reset){
+      MW_printf("encoder1_reset[true ]\n");
+    }else{
+      MW_printf("encoder1_reset[false]\n");
+    }
+    if(encoder2_reset){
+      MW_printf("encoder2_reset[true ]\n");
+    }else{
+      MW_printf("encoder2_reset[false]\n");
+    }
   }
   
   return EXIT_SUCCESS;
@@ -352,55 +374,137 @@ int suspensionSystem(void){
 }
 
 static
-int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation){
-  /* int32_t value=0,temp_value=0; */
-  /* static int32_t adjust[4] = {0,0,0,0}; */
+int odmetry_position(double position[3]){
+  static bool matrix_init = false;
+  const int encoder_ppr = (2048)*4;
+  const int tire_diameter = 48;
+  static double cal_matrix[3][4];
+  static double recent_position[3] = {0.0, 0.0, 0.0};
+  double temp_position[3],return_position[3],return_position_val[3],encoder_diff[4];
+  int i,j;
 
-  /* switch(encoder_num){ */
-  /* case 0: */
-  /*   temp_value = g_ss_h[I2C_ENCODER_1].data[0] + (g_ss_h[I2C_ENCODER_1].data[1] << 8) + (g_ss_h[I2C_ENCODER_1].data[2] << 16) + (g_ss_h[I2C_ENCODER_1].data[3] << 24); */
-  /*   value = temp_value + adjust[0]; */
-  /*   if(operation == GET_ENCODER_VALUE){ */
-  /*     break; */
-  /*   }else if(operation == RESET_ENCODER_VALUE){ */
-  /*     adjust[0] = -temp_value; */
-  /*     value = temp_value + adjust[0]; */
-  /*   } */
-  /*   break; */
-    
-  /* case 1: */
-  /*   temp_value = g_ss_h[I2C_ENCODER_1].data[4] + (g_ss_h[I2C_ENCODER_1].data[5] << 8) + (g_ss_h[I2C_ENCODER_1].data[6] << 16) + (g_ss_h[I2C_ENCODER_1].data[7] << 24); */
-  /*   value = temp_value + adjust[1]; */
-  /*   if(operation == GET_ENCODER_VALUE){ */
-  /*     break; */
-  /*   }else if(operation == RESET_ENCODER_VALUE){ */
-  /*     adjust[1] = -temp_value; */
-  /*     value = temp_value + adjust[1]; */
-  /*   } */
-  /*   break; */
-    
-  /* case 2: */
-  /*   temp_value = g_ss_h[I2C_ENCODER_2].data[0] + (g_ss_h[I2C_ENCODER_2].data[1] << 8) + (g_ss_h[I2C_ENCODER_2].data[2] << 16) + (g_ss_h[I2C_ENCODER_2].data[3] << 24); */
-  /*   value = temp_value + adjust[2]; */
-  /*   if(operation == GET_ENCODER_VALUE){ */
-  /*     break; */
-  /*   }else if(operation == RESET_ENCODER_VALUE){ */
-  /*     adjust[2] = -temp_value; */
-  /*     value = temp_value + adjust[2]; */
-  /*   } */
-  /*   break; */
-    
-  /* case 3: */
-  /*   temp_value = g_ss_h[I2C_ENCODER_2].data[4] + (g_ss_h[I2C_ENCODER_2].data[5] << 8) + (g_ss_h[I2C_ENCODER_2].data[6] << 16) + (g_ss_h[I2C_ENCODER_2].data[7] << 24); */
-  /*   value = temp_value + adjust[3]; */
-  /*   if(operation == GET_ENCODER_VALUE){ */
-  /*     break; */
-  /*   }else if(operation == RESET_ENCODER_VALUE){ */
-  /*     adjust[3] = -temp_value; */
-  /*     value = temp_value + adjust[3]; */
-  /*   } */
-  /*   break; */
-  /* } */
+  if(!matrix_init){
+    cal_matrix[0][0] = -0.055815556002182089637945390335639840362915960837233;
+    cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796;
+    cal_matrix[0][2] =  0.055815556002182089637945390335639840362915960837233;
+    cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039;
+
+    cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000;
+    cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000;
+    cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000;
+    cal_matrix[1][3] =  0.0000000000000000000000000000000000000000000000000;
+
+    cal_matrix[2][0] =  0.3014040024117832840449051078124551379597461885211;
+    cal_matrix[2][1] =  0.2446581871428981595796606276378879669241149616699;
+    cal_matrix[2][2] = -0.3014040024117832840449051078124551379597461885211;
+    cal_matrix[2][3] =  0.2446581871428981595796606276378879669241149616699;
+
+    matrix_init = true;
+  }
   
-  /* return value; */
+  for(i=0;i<4;i++){
+    encoder_diff[i] = (double)(I2C_Encoder(i,GET_DIFF));
+  }
+
+  for(i=0;i<3;i++){
+    temp_position[i] = 0.0;
+    for(j=0;j<4;j++){
+      temp_position[i] += cal_matrix[i][j] * encoder_diff[j];
+    }
+    return_position[i] = recent_position[i] + temp_position[i];
+  }
+  
+  fill_array(recent_position, return_position, 3);
+
+  for(i=0;i<3;i++){
+    return_position_val[i] = return_position[i] * (((double)(tire_diameter)*M_PI)/(double)(encoder_ppr));
+  }
+  fill_array(position, return_position_val, 3);
+
+  return 0;
+}
+
+static
+int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation){
+  int32_t value=0,temp_value=0,diff=0;
+  static int32_t adjust[4] = {0,0,0,0};
+  static int32_t recent_value[4] = {0,0,0,0};
+  static int message_count = 0;
+  
+  switch(encoder_num){
+  case 0:
+    temp_value = g_ss_h[I2C_ENCODER_1].data[0] + (g_ss_h[I2C_ENCODER_1].data[1] << 8) + (g_ss_h[I2C_ENCODER_1].data[2] << 16) + (g_ss_h[I2C_ENCODER_1].data[3] << 24);
+    value = temp_value + adjust[0];
+    if(operation == GET_ENCODER_VALUE){
+      break;
+    }else if(operation == RESET_ENCODER_VALUE){
+      adjust[0] = -temp_value;
+      value = temp_value + adjust[0];
+    }else if(operation == GET_DIFF){
+      diff = value - recent_value[0];
+    }
+    break;
+    
+  case 1:
+    temp_value = g_ss_h[I2C_ENCODER_1].data[4] + (g_ss_h[I2C_ENCODER_1].data[5] << 8) + (g_ss_h[I2C_ENCODER_1].data[6] << 16) + (g_ss_h[I2C_ENCODER_1].data[7] << 24);
+    value = temp_value + adjust[1];
+    if(operation == GET_ENCODER_VALUE){
+      break;
+    }else if(operation == RESET_ENCODER_VALUE){
+      adjust[1] = -temp_value;
+      value = temp_value + adjust[1];
+    }else if(operation == GET_DIFF){
+      diff = value - recent_value[1];
+    }
+    break;
+    
+  case 2:
+    temp_value = g_ss_h[I2C_ENCODER_2].data[0] + (g_ss_h[I2C_ENCODER_2].data[1] << 8) + (g_ss_h[I2C_ENCODER_2].data[2] << 16) + (g_ss_h[I2C_ENCODER_2].data[3] << 24);
+    value = temp_value + adjust[2];
+    if(operation == GET_ENCODER_VALUE){
+      break;
+    }else if(operation == RESET_ENCODER_VALUE){
+      adjust[2] = -temp_value;
+      value = temp_value + adjust[2];
+    }else if(operation == GET_DIFF){
+      diff = value - recent_value[2];
+    }
+    break;
+    
+  case 3:
+    temp_value = g_ss_h[I2C_ENCODER_2].data[4] + (g_ss_h[I2C_ENCODER_2].data[5] << 8) + (g_ss_h[I2C_ENCODER_2].data[6] << 16) + (g_ss_h[I2C_ENCODER_2].data[7] << 24);
+    value = temp_value + adjust[3];
+    if(operation == GET_ENCODER_VALUE){
+      break;
+    }else if(operation == RESET_ENCODER_VALUE){
+      adjust[3] = -temp_value;
+      value = temp_value + adjust[3];
+    }else if(operation == GET_DIFF){
+      diff = value - recent_value[3];
+    }
+    break;
+  }
+
+  recent_value[encoder_num] = value;
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    if(operation != RESET_ENCODER_VALUE){
+      if(message_count >= 3){
+	MW_printf("<E0>[%10d] <E1>[%10d] <E2>[%10d] <E3>[%10d]\n",recent_value[0],recent_value[1],recent_value[2],recent_value[3]);
+	message_count = 0;
+      }else{
+	message_count++;
+      }
+    }
+  }
+  if(operation == GET_DIFF){
+    return diff;
+  }
+  return value;
+}
+
+static
+void fill_array(double array1[], double array2[], int size){
+  for(int i=0;i<size;i++){
+    array1[i] = array2[i];
+  }
 }
