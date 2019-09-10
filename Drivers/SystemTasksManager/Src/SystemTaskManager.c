@@ -49,7 +49,7 @@ int SY_doDevDriverTasks(void);
 #endif
 
 int main(void){
-  int ret;
+  int ret,i,j;
 
   //システムを初期化します
   ret = SY_init();
@@ -64,7 +64,7 @@ int main(void){
     message("err", "I2CConnectionTest Faild%d", ret);
     MW_waitForMessageTransitionComplete(100);
     return EXIT_FAILURE;
-    }
+  }
 
   //ここから開始します。
   g_SY_system_counter = 0;
@@ -98,7 +98,6 @@ int main(void){
       MW_printf("\033[1;1H");//カーソルを(1,1)にセットして
       DD_RCPrint((uint8_t*)g_rc_data);//RCのハンドラを表示します
       DD_print();//各デバイスハンドラを表示します
-      MW_printf("$%d",(int)g_led_mode);//LEDのモードも表示します
       flush(); /* out message. */
     }
     //タイミング待ちを行います
@@ -111,6 +110,14 @@ int main(void){
     //エラー処理です
     if( ret ){
       message("err", "Device Driver Tasks Faild%d", ret);
+#if DD_NUM_OF_LD
+      for(i=0;i<DD_NUM_OF_LD;i++){
+	for(j=0;j<8;j++){
+	  g_ld_h[i].mode[j] = D_LMOD_BLINK_RED;
+	}
+	DD_I2C1Send(g_ld_h[i].add, g_ld_h[i].mode, 8);
+      }
+#endif
       return EXIT_FAILURE;
     }
     //タイミング待ちを行います
@@ -121,6 +128,14 @@ int main(void){
     count_for_rc++;
     if(count_for_rc >= 20){
       message("err","RC disconnected!");
+#if DD_NUM_OF_LD
+      for(i=0;i<DD_NUM_OF_LD;i++){
+	for(j=0;j<8;j++){
+	  g_ld_h[i].mode[j] = D_LMOD_BLINK_RED;
+	}
+	DD_I2C1Send(g_ld_h[i].add, g_ld_h[i].mode, 8);
+      }
+#endif
       while(1);
     }
 #endif
@@ -155,7 +170,7 @@ int SY_I2CConnTest(int timeout){
 
 static
 int SY_init(void){
-  int ret;
+  int ret,i,j;
   /* Reset of all peripherals, Initializes the Flash interface and the Systick.
   **/
   if( HAL_Init()){
@@ -191,10 +206,34 @@ int SY_init(void){
   
 #if DD_USE_RC
   message("msg", "wait for RC connection...");
+#if DD_NUM_OF_LD
+  for(i=0;i<DD_NUM_OF_LD;i++){
+    for(j=0;j<8;j++){
+      g_ld_h[i].mode[j] = D_LMOD_BLINK_RED;
+    }
+    DD_I2C1Send(g_ld_h[i].add, g_ld_h[i].mode, 8);
+  }
+#endif
   if( DD_RCInit((uint8_t*)g_rc_data, 100000) ){
     message("err", "RC initialize faild!\n");
+#if DD_NUM_OF_LD
+    for(i=0;i<DD_NUM_OF_LD;i++){
+      for(j=0;j<8;j++){
+	g_ld_h[i].mode[j] = D_LMOD_BLINK_RED;
+      }
+      DD_I2C1Send(g_ld_h[i].add, g_ld_h[i].mode, 8);
+    }
+#endif
     return EXIT_FAILURE;
   }
+#if DD_NUM_OF_LD
+  for(i=0;i<DD_NUM_OF_LD;i++){
+    for(j=0;j<8;j++){
+      g_ld_h[i].mode[j] = D_LMOD_DIMING_BLUE;
+    }
+    DD_I2C1Send(g_ld_h[i].add, g_ld_h[i].mode, 8);
+  }
+#endif
   message("msg", "RC connected sucess");
 #endif
   
