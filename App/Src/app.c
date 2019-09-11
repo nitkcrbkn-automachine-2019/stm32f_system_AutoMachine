@@ -23,7 +23,7 @@ int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
 static
 int go_to_target(double zahyou_1[2], double zahyou_2[2], int continue_moving);
 static
-int decide_straight_duty(double *duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3]);
+MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration);
 static
 int decide_turn_duty(double zahyou_1[2], double zahyou_2[2], int continue_moving);
 static
@@ -267,27 +267,87 @@ int appTask(void){
 }
 
 static
-int decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration){
+MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration){
   MovingDestination_t mode;
+  MovingSituation_t situation;
   double distance_to_target;
-  
-  if(zahyou_2[0]-zahyou_1[0]==0.0){
-    if(zahyou_2[1]-zahyou_1[1] >= 0.0){
-      mode = PLUS_Y;
-    }else{
-      mode = MINUS_Y;
+  double distance_from_first;
+  static double recent_zahyou_1[2]={0.0, 0.0},recent_zahyou_2[2]={0.0, 0.0};
+  static double first_distance;
+  static bool first_flag = true;
+
+  if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
+    first_flag = true;
+    if(zahyou_2[0]-zahyou_1[0]==0.0){
+      if(zahyou_2[1]-zahyou_1[1] >= 0.0){
+	mode = PLUS_Y;
+      }else{
+	mode = MINUS_Y;
+      }
+    }else if(zahyou_2[1]-zahyou_1[1]==0.0){
+      if(zahyou_2[0]-zahyou_1[0] >= 0.0){
+	mode = PLUS_X;
+      }else{
+	mode = MINUS_X;
+      }
     }
-    distance_to_target = fabs(zahyou_2[1] - position[0][1]);
-  }else if(zahyou_2[1]-zahyou_1[1]==0.0){
-    if(zahyou_2[0]-zahyou_1[0] >= 0.0){
-      mode = PLUS_X;
-    }else{
-      mode = MINUS_X;
-    }
-    distance_to_target = fabs(zahyou_2[0] - position[0][0]);
+    recent_zahyou_1[0] = zahyou_1[0];
+    recent_zahyou_1[1] = zahyou_1[1];
+    recent_zahyou_2[0] = zahyou_2[0];
+    recent_zahyou_2[1] = zahyou_2[1];
   }
 
-  return 0;
+  switch(mode){
+  case PLUS_X:
+    distance_to_target = zahyou_2[0] - position[0][0];
+    break;
+  case MINUS_X:
+    distance_to_target = position[0][0] - zahyou_2[0];
+    break;
+  case PLUS_Y:
+    distance_to_target = zahyou_2[1] - position[0][1];
+    break;
+  case MINUS_Y:
+    distance_to_target = position[0][1] - zahyou_2[1];
+    break;
+  }
+
+  if(first_flag){
+    first_distance = distance_to_target;
+    first_flag = false;
+  }
+
+  if(acceleration){
+    distance_from_first = fabs(first_distance-distance_to_target);
+    if(distance_to_target > 1000.0){
+      if(distance_from_first <= 1000.0){
+	*return_duty = max_duty * (distance_from_first/1000.0)*(distance_from_first/1000.0)*(distance_from_first/1000.0);
+	if(*return_duty <= SUS_LOW_DUTY) *return_duty = SUS_LOW_DUTY;
+	situation = PLUS_ACCELERATING;
+      }else{
+	*return_duty = max_duty;
+	situation = CONSTANT_SPEED;
+      }
+    }else{
+      *return_duty = max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty;
+      if(*return_duty <= SUS_LOW_DUTY) *return_duty = SUS_LOW_DUTY;
+      situation = MINUS_ACCELERATING;
+    }
+    if(distance_to_target <= 1.0){ //1mmくらい進むkana
+      *return_duty = 0.0;
+      situation = ARRIVED_TARGET;
+    }
+  }else{
+    if(distance_to_target <= 1.0){
+      *return_duty = 0.0;
+      situation = ARRIVED_TARGET;
+    }else{
+      *return_duty = max_duty;
+      situation = CONSTANT_SPEED;
+    }
+  }
+  
+  return situation;
 }
 
 static

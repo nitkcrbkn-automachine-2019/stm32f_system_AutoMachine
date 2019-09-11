@@ -58,6 +58,8 @@ int appInit(void);
 
 #define STRAIGHT_MAX_DUTY 8000
 
+#define SUS_LOW_DUTY 1000.0
+
 #define ARM_UP_MD 4
 #define ARM_SPIN_MD 5 
 
@@ -70,7 +72,6 @@ int appInit(void);
 
 #define MOVE_SAMPLE_VALUE 20 //←のポジションデータで自己位置推定
 
-const double accel_array[10] = {}
 
 typedef enum{
   GET_ENCODER_VALUE = 0,
@@ -91,6 +92,13 @@ typedef enum{
   PLUS_Y = 2,
   MINUS_Y = 3,
 }MovingDestination_t;
+
+typedef enum{
+  PLUS_ACCELERATING = 0,
+  CONSTANT_SPEED = 1,
+  MINUS_ACCELERATING = 2,
+  ARRIVED_TARGET = 3,
+}MovingSituation_t;
 
 typedef enum{
   NOW_POSITION_RIGHT = 0,
