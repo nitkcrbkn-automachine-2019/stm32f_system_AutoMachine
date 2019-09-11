@@ -21,11 +21,11 @@ int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
 /********/
 
 static
-int go_to_target(double zahyou_1[2], double zahyou_2[2], int continue_moving);
+int go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool accelerating);
 static
 MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration);
 static
-int decide_turn_duty(double zahyou_1[2], double zahyou_2[2], int continue_moving);
+int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust,  double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration);
 static
 int steering_spin_to_target(int target,int target_motor);
 static
@@ -333,12 +333,12 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
       if(*return_duty <= SUS_LOW_DUTY) *return_duty = SUS_LOW_DUTY;
       situation = MINUS_ACCELERATING;
     }
-    if(distance_to_target <= 1.0){ //1mmくらい進むkana
+    if(distance_to_target <= 5.0){ //5mmくらい進むkana
       *return_duty = 0.0;
       situation = ARRIVED_TARGET;
     }
   }else{
-    if(distance_to_target <= 1.0){
+    if(distance_to_target <= 5.0){
       *return_duty = 0.0;
       situation = ARRIVED_TARGET;
     }else{
@@ -348,6 +348,23 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
   }
   
   return situation;
+}
+
+static
+int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration){
+  MovingSituation_t situation;
+  NowPosition_t now_position;
+  double degree,distance;
+  double get_x[MOVE_SAMPLE_VALUE],get_y[MOVE_SAMPLE_VALUE];
+  int i;
+  
+  for(i=0; i<MOVE_SAMPLE_VALUE; i++){
+    get_x[i] = position[i][0];
+    get_x[i] = position[i][1];
+  }
+  now_position = get_deg_dis(get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
+  
+  return 0;
 }
 
 static

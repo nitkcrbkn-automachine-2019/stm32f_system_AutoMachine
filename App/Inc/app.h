@@ -71,7 +71,7 @@ int appInit(void);
 /****以下追加分*****************/
 
 #define MOVE_SAMPLE_VALUE 20 //←のポジションデータで自己位置推定
-
+#define MOVE_ACCEPTABLE_WIDTH 20.0 //←*2の幅が移動時の許容
 
 typedef enum{
   GET_ENCODER_VALUE = 0,
