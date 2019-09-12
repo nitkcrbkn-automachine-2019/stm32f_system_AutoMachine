@@ -21,13 +21,13 @@ int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
 /********/
 
 static
-int go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool accelerating);
+MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration);
 static
-MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration);
+MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration, MovingDestination_t mode);
 static
-int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust,  double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration);
+int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust,  double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode);
 static
-int steering_spin_to_target(int target,int target_motor);
+SteeringSituation_t steering_spin_to_target(int target,int target_motor);
 static
 int steering_1_init(void);
 static
@@ -39,7 +39,7 @@ int odmetry_position(double position[3], int recet);
 static
 int odmetry_position_recent(double position[MOVE_SAMPLE_VALUE][3], int recet);
 static
-NowPosition_t get_deg_dis(double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double zahyou_1[2], double zahyou_2[2], double *return_degree, double *return_distance);
+NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double zahyou_1[2], double zahyou_2[2], double *return_degree, double *return_distance);
 static
 void fill_array(double array1[], double array2[], int size);
 
@@ -185,8 +185,8 @@ int appTask(void){
       }
     }
     if(encoder1_reset && encoder2_reset){
-      ret = steering_spin_to_target(mun_sus_target+R_F_DEG_ADJUST,1);
-      ret = steering_spin_to_target(mun_sus_target+L_B_DEG_ADJUST,2);
+      steering_spin_to_target(mun_sus_target+R_F_DEG_ADJUST,1);
+      steering_spin_to_target(mun_sus_target+L_B_DEG_ADJUST,2);
     }
 
     ret = suspensionSystem();
@@ -267,17 +267,21 @@ int appTask(void){
 }
 
 static
-MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration){
-  MovingDestination_t mode;
+MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration){
+  SteeringSituation_t steering_situation[2];
   MovingSituation_t situation;
-  double distance_to_target;
-  double distance_from_first;
-  static double recent_zahyou_1[2]={0.0, 0.0},recent_zahyou_2[2]={0.0, 0.0};
-  static double first_distance;
-  static bool first_flag = true;
+  MovingDestination_t mode;
+  double straight_duty,right_duty_adjust,left_duty_adjust,right_duty,left_duty;
+  double recent_zahyou_1[2]={},recent_zahyou_2[2]={};
+  static double position[MOVE_SAMPLE_VALUE][3] = {};
+  static first_flag = true;
 
   if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
     first_flag = true;
+    recent_zahyou_1[0] = zahyou_1[0];
+    recent_zahyou_1[1] = zahyou_1[1];
+    recent_zahyou_2[0] = zahyou_2[0];
+    recent_zahyou_2[1] = zahyou_2[1];
     if(zahyou_2[0]-zahyou_1[0]==0.0){
       if(zahyou_2[1]-zahyou_1[1] >= 0.0){
 	mode = PLUS_Y;
@@ -291,6 +295,67 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
 	mode = MINUS_X;
       }
     }
+  }
+
+  if(first_flag){
+    switch(mode){
+    case PLUS_Y:
+    case MINUS_Y:
+      steering_situation[0] = steering_spin_to_target(0+R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target(0+L_B_DEG_ADJUST,2);
+      break;
+    case PLUS_X:
+    case MINUS_X:
+      steering_situation[0] = steering_spin_to_target(90+R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target(90+L_B_DEG_ADJUST,2);
+      break;
+    }
+    if(steering_situation[0]==STEERING_STOP && steering_situation[1]==STEERING_STOP){
+      first_flag = false;
+    }
+    situation = SPIN_STEERING;
+  }else{
+    odmetry_position_recent(position, 0);
+    situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
+    decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
+
+    if(situation == ARRIVED_TARGET){
+      right_duty = straight_duty + right_duty_adjust;
+      left_duty = straight_duty + left_duty_adjust;
+      switch(mode){
+      case PLUS_Y:
+      case MINUS_X:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	break;
+      case PLUS_X:
+      case MINUS_Y:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	break;
+      }
+      g_md_h[R_F_KUDO_MD].duty = right_duty;
+      g_md_h[L_B_KUDO_MD].duty = left_duty;
+    }else{
+      g_md_h[R_F_KUDO_MD].duty = 0;
+      g_md_h[L_B_KUDO_MD].duty = 0;
+    }
+  }
+  
+  return situation;
+}
+
+static
+MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration, MovingDestination_t mode){
+  MovingSituation_t situation;
+  double distance_to_target;
+  double distance_from_first;
+  static double recent_zahyou_1[2]={0.0, 0.0},recent_zahyou_2[2]={0.0, 0.0};
+  static double first_distance;
+  static bool first_flag = true;
+
+  if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
+    first_flag = true;
     recent_zahyou_1[0] = zahyou_1[0];
     recent_zahyou_1[1] = zahyou_1[1];
     recent_zahyou_2[0] = zahyou_2[0];
@@ -351,32 +416,76 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
 }
 
 static
-int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration){
+int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode){
   MovingSituation_t situation;
   NowPosition_t now_position;
   double degree,distance;
   double get_x[MOVE_SAMPLE_VALUE],get_y[MOVE_SAMPLE_VALUE];
+  double right_adjust_value=0.0,left_adjust_value=0.0;
   int i;
   
   for(i=0; i<MOVE_SAMPLE_VALUE; i++){
     get_x[i] = position[i][0];
     get_x[i] = position[i][1];
   }
-  now_position = get_deg_dis(get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
+  now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
+
+  if(distance > MOVE_ACCEPTABLE_WIDTH){
+    switch(now_position){
+    case NOW_POSITION_RIGHT:
+      if(distance*2.0 <= 100.0){
+	right_adjust_value = 100.0;
+      }else if(distance*2.0 >= 400.0){
+	right_adjust_value = 400.0;
+      }else{
+	right_adjust_value = distance * 2.0;
+      }
+      if(degree > 0.0){
+	right_adjust_value += degree * 10.0;
+      }
+      break;
+    case NOW_POSITION_LEFT:
+      if(distance*2.0 <= 100.0){
+	left_adjust_value = 100.0;
+      }else if(distance*2.0 >= 400.0){
+	left_adjust_value = 400.0;
+      }else{
+	left_adjust_value = distance * 2.0;
+      }
+      if(degree < 0.0){
+	left_adjust_value += -degree * 10.0;
+      }
+      break;
+    default:
+      break;
+    }
+  }else{
+    if(degree > 0.0){
+      right_adjust_value = degree*10.0 + 100.0;
+    }else if(degree < 0.0){
+      left_adjust_value = -degree*10.0 + 100.0;
+    }
+  }
+
+  if(right_adjust_value > 500.0) right_adjust_value = 500.0;
+  if(left_adjust_value > 500.0) left_adjust_value = 500.0;
+
+  *right_duty_adjust = (straight_duty/1000.0) * right_adjust_value; 
+  *left_duty_adjust = (straight_duty/1000.0) * left_adjust_value; 
   
   return 0;
 }
 
 static
-int steering_spin_to_target(int target,int target_motor){
+SteeringSituation_t steering_spin_to_target(int target,int target_motor){
   const int32_t encoder_ppr = (512)*4;
   const int div = (2048*4)/encoder_ppr;
   /* const int target_deg[9] = {2048,1024,512,256,128,64,32,26,21}; */
   /* const int target_duty[9]   = {8000,3000,1000,120,110,100,90,85,80}; */
   const int target_deg[2][9]  = {{2048/div,1024/div,512/div,256/div,128/div,64/div,32/div,26/div,21/div},
 				 {2048/div,1024/div,512/div,256/div,128/div,64/div,32/div,26/div,21/div}};
-  int target_duty[2][9] = {{9000,5000,3000,1400,1300,1250,1200,1150,1000},
-			   {9000,5000,3000,1400,1300,1250,1200,1150,1000}};
+  int target_duty[2][9] = {{9000,5000,3000,1400,1300,1250,1200,1150,900},
+			   {9000,5000,3000,1400,1300,1250,1200,1150,900}};
   int32_t encoder;
   int32_t encoder_degree;
   int32_t target_degree;
@@ -385,7 +494,9 @@ int steering_spin_to_target(int target,int target_motor){
   int duty;
   int i,j;
   int choose_motor[2] = {};
-
+  SteeringSituation_t situation;
+  static bool motor_set[2] = {false, false};
+  
   for(i=0;i<9;i++){
     target_duty[0][i] *= VOLTAGE_ADJUST;
     target_duty[1][i] *= VOLTAGE_ADJUST;
@@ -432,15 +543,38 @@ int steering_spin_to_target(int target,int target_motor){
       g_md_h[j].duty = duty;
       if(duty==0){
 	g_md_h[j].mode = D_MMOD_BRAKE;
+	motor_set[j] = true;
       }else{
 	g_md_h[j].mode = D_MMOD_FORWARD;
+	motor_set[j] = false;
       }
     }else{
       g_md_h[j].duty = duty;
       if(duty==0){
 	g_md_h[j].mode = D_MMOD_BRAKE;
+	motor_set[j] = true;
       }else{
 	g_md_h[j].mode = D_MMOD_BACKWARD;
+	motor_set[j] = false;
+      }
+    }
+    if(target_motor == 0){
+      if(motor_set[0] && motor_set[1]){
+	situation = STEERING_STOP;
+      }else{
+	situation = STEERING_NOW;
+      }
+    }else if(target_motor == 1){
+      if(motor_set[0]){
+	situation = STEERING_STOP;
+      }else{
+	situation = STEERING_NOW;
+      }
+    }else if(target_motor == 2){
+      if(motor_set[1]){
+	situation = STEERING_STOP;
+      }else{
+	situation = STEERING_NOW;
       }
     }
     if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
@@ -454,6 +588,7 @@ int steering_spin_to_target(int target,int target_motor){
       }
     }
   }
+  return situation;
 }
 
 static
@@ -554,10 +689,10 @@ int suspensionSystem(void){
     rc_analogdata_turn = DD_RCGetLX(g_rc_data);
     switch(i){
     case 0:
-      idx = MECHA1_MD1;
+      idx = R_F_KUDO_MD;
       break;
     case 1:
-      idx = MECHA1_MD2;
+      idx = L_B_KUDO_MD;
       rc_analogdata_turn = -rc_analogdata_turn;
       break;
     default:return EXIT_FAILURE;
@@ -669,7 +804,7 @@ int odmetry_position(double position[3], int recet){
     cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796;
     cal_matrix[0][2] =  0.055815556002182089637945390335639840362915960837233;
     cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039;
-
+    
     cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000;
     cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000;
     cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000;
@@ -731,10 +866,9 @@ int odmetry_position(double position[3], int recet){
 }
 
 static
-NowPosition_t get_deg_dis(double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double get_zahyou_1[2], double get_zahyou_2[2], double *return_degree, double *return_distance){
+NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double get_zahyou_1[2], double get_zahyou_2[2], double *return_degree, double *return_distance){
   double x[MOVE_SAMPLE_VALUE],y[MOVE_SAMPLE_VALUE],temp_data[MOVE_SAMPLE_VALUE];
   double zahyou_1[2],zahyou_2[2],temp_zahyou;
-  MovingDestination_t mode;
   NowPosition_t position;
   double ave_x=0.0, ave_y=0.0, ave_xx=0.0, ave_xy=0.0;
   bool x_move_flag = false,y_move_flag = false;
@@ -747,20 +881,6 @@ NowPosition_t get_deg_dis(double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAM
   fill_array(zahyou_1,get_zahyou_1,2);
   fill_array(zahyou_2,get_zahyou_2,2);
   
-  if(zahyou_2[0]-zahyou_1[0]==0.0){
-    if(zahyou_2[1]-zahyou_1[1] >= 0.0){
-      mode = PLUS_Y;
-    }else{
-      mode = MINUS_Y;
-    }
-  }else if(zahyou_2[1]-zahyou_1[1]==0.0){
-    if(zahyou_2[0]-zahyou_1[0] >= 0.0){
-      mode = PLUS_X;
-    }else{
-      mode = MINUS_X;
-    }
-  }
-
   switch(mode){
   case PLUS_X:
     destination = 1.0;

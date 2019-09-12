@@ -40,8 +40,8 @@ int appInit(void);
 #define LEFT_ENC 2
 #define FRONT_ENC 3
 
-#define MECHA1_MD1 2
-#define MECHA1_MD2 3
+#define R_F_KUDO_MD 2
+#define L_B_KUDO_MD 3
 #define CENTRAL_THRESHOLD 4
 
 #define VOLTAGE 12.0
@@ -98,6 +98,7 @@ typedef enum{
   CONSTANT_SPEED = 1,
   MINUS_ACCELERATING = 2,
   ARRIVED_TARGET = 3,
+  SPIN_STEERING = 4,
 }MovingSituation_t;
 
 typedef enum{
@@ -106,6 +107,11 @@ typedef enum{
   NOW_POSITION_CENTER = 2,
   NOW_POSITION_STOP = 3,
 }NowPosition_t;
+
+typedef enum{
+  STEERING_NOW = 0,
+  STEERING_STOP = 1,
+}SteeringSituation_t;
 
 #endif
 
