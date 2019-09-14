@@ -43,7 +43,7 @@ DD_LDHand_t g_ld_h[DD_NUM_OF_LD] = {
 #if DD_NUM_OF_AB
 /*AB Definition*/
 DD_ABHand_t g_ab_h[DD_NUM_OF_AB] = {
-  { .add = 0x20, /* address */
+  { .add = 0x21, /* address */
     .dat = 0x00, /* data */
   },
 };

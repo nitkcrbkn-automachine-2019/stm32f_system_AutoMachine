@@ -109,6 +109,7 @@ int DD_RCPrint(volatile uint8_t data[RC_DATA_NUM]){
   int bp;
 
   bp=__RC_ISPRESSED_UP(data);
+  MW_printf("flash ");
   if(bp){
     MW_printf("\033[1;33m\033[40m");
   }

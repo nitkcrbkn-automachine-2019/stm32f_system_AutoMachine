@@ -105,7 +105,16 @@ int main(void){
     }
 #if !_NO_DEVICE
     //デバイスがあれば、各デバイスタスクを実行します。これはハンドラに格納されているデータをMDに転送する内容などが含まれます。
-    ret = SY_doDevDriverTasks();
+#if DD_NUM_OF_LD
+    if(LED_OFF_SW()){
+      for(i=0;i<DD_NUM_OF_LD;i++){
+	for(j=0;j<8;j++){
+	  g_ld_h[i].mode[j] = D_LMOD_NONE;
+	}
+      }
+    }
+#endif
+      ret = SY_doDevDriverTasks();
 #endif
     //エラー処理です
     if( ret ){
