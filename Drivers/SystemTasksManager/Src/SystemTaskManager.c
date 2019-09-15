@@ -27,9 +27,9 @@ static uint8_t rc_rcv[RC_DATA_NUM];
 volatile led_mode_t g_led_mode = lmode_1;
 static volatile unsigned int count_for_rc = 0;
 
-volatile uint8_t sensor_area_rcv[8] = {0,0,0,0,0,0,0,0};
-static uint8_t sensor_area_rcv_data[8] = {0,0,0,0,0,0,0,0};
-static int sensor_area_wait_count = 0;
+volatile uint8_t debug_monitor_rcv[8] = {0,0,0,0,0,0,0,0};
+static uint8_t debug_monitor_rcv_data[8] = {0,0,0,0,0,0,0,0};
+static int debug_monitor_wait_count = 0;
 
 static
 int SY_init(void);
@@ -82,17 +82,19 @@ int main(void){
     SY_doAppTasks();
     //もしメッセージを出すタイミングであれば
     if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-#if USE_SENSOR_AREA
-      sensor_area_wait_count++;
-      if(sensor_area_wait_count >= 2){
-	MW_USART3ReceiveMult(8, sensor_area_rcv_data);
-	for(int i=0;i<4;i++){
-	  MW_printf("[%6d]",sensor_area_rcv_data[i*2]+sensor_area_rcv_data[i*2+1]*256);
-	}
+#if USE_DEBUG_MONITOR
+      debug_monitor_wait_count++;
+      if(debug_monitor_wait_count >= 2){
+	MW_USART2ReceiveMult(8, debug_monitor_rcv_data);
+	MW_printf("debug_monitor:");
 	for(int i=0;i<8;i++){
-	  sensor_area_rcv[i] = sensor_area_rcv_data[i];
+	  MW_printf("[%08b]",debug_monitor_rcv_data[i]);
 	}
-	sensor_area_wait_count = 0;
+	MW_printf("\n");
+	for(int i=0;i<8;i++){
+	  debug_monitor_rcv[i] = debug_monitor_rcv_data[i];
+	}
+        debug_monitor_wait_count = 0;
       }
 #endif
       MW_printf("\033[1;1H");//カーソルを(1,1)にセットして
@@ -171,10 +173,10 @@ int SY_init(void){
   /*UART initialize*/
   MW_USARTInit(USART2ID);
 
-#if USE_SENSOR_AREA
-  MW_USARTSetBaudRate(USART3ID, 9600);
-  MW_USARTInit(USART3ID);
-#endif
+/* #if USE_SENSOR_AREA */
+/*   MW_USARTSetBaudRate(USART3ID, 9600); */
+/*   MW_USARTInit(USART3ID); */
+/* #endif */
   /*Initialize printf null transit*/
   flush();
 #if !_NO_DEVICE
@@ -300,8 +302,10 @@ void SY_GPIOInit(void){
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle){
   UNUSED(UartHandle);
 #if DD_USE_RC
-  if(DD_RCTask(rc_rcv, (uint8_t*)g_rc_data)!=0)message("err","rc err");
-  count_for_rc = 0;
+  if(UartHandle.Instance == USART3){
+    if(DD_RCTask(rc_rcv, (uint8_t*)g_rc_data)!=0)message("err","rc err");
+    count_for_rc = 0;
+  }
 #endif
 }
 

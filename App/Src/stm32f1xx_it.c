@@ -185,6 +185,10 @@ void DMA1_Channel7_IRQHandler(void){
   HAL_DMA_IRQHandler(huart2.hdmatx);
 }
 
+void DMA1_Channel6_IRQHandler(void){
+  HAL_DMA_IRQHandler(huart2.hdmarx);
+}
+
 void DMA1_Channel3_IRQHandler(void){
   HAL_DMA_IRQHandler(huart3.hdmarx);
 }

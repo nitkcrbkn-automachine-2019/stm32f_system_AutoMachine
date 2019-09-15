@@ -641,6 +641,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   else if(huart->Instance==USART2) {
 
     static DMA_HandleTypeDef hdma_tx;
+    static DMA_HandleTypeDef hdma_rx;
     /* USER CODE BEGIN USART2_MspInit 0 */
 
     /* USER CODE END USART2_MspInit 0 */
@@ -660,7 +661,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
 
     GPIO_InitStruct.Pin = GPIO_PIN_3;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    /* GPIO_InitStruct.Pull = GPIO_NOPULL; */
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN USART2_MspInit 1 */
@@ -692,10 +694,33 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     HAL_NVIC_EnableIRQ(DMA1_Channel7_IRQn);
 
     /* NVIC configuration for DMA transfer complete interrupt (USARTx_RX) */
+    /* HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0); */
+    /* HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn); */
+
+    /* NVIC configuration for USART, to catch the TX complete */
+    /* HAL_NVIC_SetPriority(USART2_IRQn, 0, 1); */
+    /* HAL_NVIC_EnableIRQ(USART2_IRQn); */
+
+    /* Add UART2 DMA Config*/
+    hdma_rx.Instance                 = DMA1_Channel6;
+    hdma_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+    hdma_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
+    hdma_rx.Init.MemInc              = DMA_MINC_ENABLE;
+    hdma_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_BYTE;
+    hdma_rx.Init.Mode                = DMA_NORMAL;
+    hdma_rx.Init.Priority            = DMA_PRIORITY_HIGH;
+
+    HAL_DMA_Init(&hdma_rx);
+    
+
+    /* Associate the initialized DMA handle to the the UART handle */
+    __HAL_LINKDMA(huart, hdmarx, hdma_rx);
+    /* NVIC configuration for DMA transfer complete interrupt (USARTx_RX) */
     HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel6_IRQn);
 
-    /* NVIC configuration for USART, to catch the TX complete */
+    /* NVIC configuration for DMA transfer complete interrupt (USART1_RX) */
     HAL_NVIC_SetPriority(USART2_IRQn, 0, 1);
     HAL_NVIC_EnableIRQ(USART2_IRQn);
   }

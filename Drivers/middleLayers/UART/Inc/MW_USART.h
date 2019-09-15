@@ -58,6 +58,7 @@ int32_t MW_USART1Transmit(const uint8_t *str,uint16_t datanum);
 int32_t MW_USART1Receive(void);
 int32_t MW_USART2Transmit(const uint8_t *str,uint16_t datanum);
 int32_t MW_USART2Receive(void);
+int32_t MW_USART2ReceiveMult(int size, const uint8_t *data);
 int32_t MW_USART3Transmit(const uint8_t *str,uint16_t datanum);
 int32_t MW_USART3Receive(void);
 int32_t MW_USART3ReceiveMult(int size,const uint8_t *data);

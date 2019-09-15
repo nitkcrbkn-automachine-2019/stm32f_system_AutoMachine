@@ -95,6 +95,13 @@ int32_t MW_USART2Receive(void){
   return (uint32_t)c;
 }
 
+int32_t MW_USART2ReceiveMult(int size, const uint8_t *data){
+  if( HAL_UART_Receive_DMA(&huart2, (uint8_t*)data, size) != HAL_OK ){
+    return -1;
+  }
+  return 0;
+}
+
 int32_t MW_USART3Transmit(const uint8_t *str, uint16_t datanum){
   if( HAL_UART_Transmit(&huart3, (uint8_t*)str, datanum, 0xFFFF) != HAL_OK ){
     return -1;
