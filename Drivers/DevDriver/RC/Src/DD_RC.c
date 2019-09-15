@@ -26,6 +26,7 @@ int DD_RCInit(uint8_t rc_data[RC_DATA_NUM], uint32_t timeout){
 
   MW_USART3ReceiveMult(RC_DATA_NUM, rc_data);
   while( remaining > g_SY_system_counter && is_not_avaiable ){
+    MW_printf("\033[1;1H");
     MW_printf("$0");
     flush();
   }
@@ -108,6 +109,7 @@ int DD_RCPrint(volatile uint8_t data[RC_DATA_NUM]){
   int bp;
 
   bp=__RC_ISPRESSED_UP(data);
+  MW_printf("flash ");
   if(bp){
     MW_printf("\033[1;33m\033[40m");
   }

@@ -22,6 +22,14 @@ DD_MDHand_t g_md_h[DD_NUM_OF_MD] = {
     .duty = 0, /* default duty */
     .mode = D_MMOD_FREE, /* mode */
   },
+  { .add  = 0x14, /* address */
+    .duty = 0, /* default duty */
+    .mode = D_MMOD_FREE, /* mode */
+  },
+  { .add  = 0x15, /* address */
+    .duty = 0, /* default duty */
+    .mode = D_MMOD_FREE, /* mode */
+  },
 };
 #endif
 #if DD_NUM_OF_LD
@@ -35,7 +43,7 @@ DD_LDHand_t g_ld_h[DD_NUM_OF_LD] = {
 #if DD_NUM_OF_AB
 /*AB Definition*/
 DD_ABHand_t g_ab_h[DD_NUM_OF_AB] = {
-  { .add = 0x20, /* address */
+  { .add = 0x21, /* address */
     .dat = 0x00, /* data */
   },
 };
@@ -55,31 +63,36 @@ DD_SSHand_t g_ss_h[DD_NUM_OF_SS] = {
     .data = {0,0,0,0,0,0,0,0},
     .type = D_STYP_ENCODER,
   },
-  { .add = 0x36,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
+  { .add = 0x1c,    /*I2C address*/
+    .data_size = 8, /*最大8バイト 無駄なく宣言する*/
     .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
+    .type = D_STYP_ENCODER,
   },
-  { .add = 0x38,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
+  /* { .add = 0x36,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
+  /* { .add = 0x38,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
   /* { .add = 0x1c,    /\*I2C address*\/ */
   /*   .data_size = 8, /\*最大8バイト 無駄なく宣言する*\/ */
   /*   .data = {0,0,0,0,0,0,0,0}, */
   /*   .type = D_STYP_ENCODER, */
   /* }, */
-  { .add = 0x53,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
-  { .add = 0x51,    /*I2C address*/
-    .data_size = 2, /*最大8バイト 無駄なく宣言する*/
-    .data = {0,0,0,0,0,0,0,0},
-    .type = D_STYP_PHOTOARRAY,
-  },
+  /* { .add = 0x53,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
+  /* { .add = 0x51,    /\*I2C address*\/ */
+  /*   .data_size = 2, /\*最大8バイト 無駄なく宣言する*\/ */
+  /*   .data = {0,0,0,0,0,0,0,0}, */
+  /*   .type = D_STYP_PHOTOARRAY, */
+  /* }, */
   
 };
 #endif

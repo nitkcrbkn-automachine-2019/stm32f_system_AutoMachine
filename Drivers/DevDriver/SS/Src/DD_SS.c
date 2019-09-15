@@ -128,6 +128,13 @@ void DD_SSHandPrint(DD_SSHand_t *dmd){
     for(int i=0;i<dmd->data_size;i++){
       MW_printf("[%08b]",dmd->data[i]);
     }
+  }else if(dmd->type == D_STYP_ENCODER){
+    uint32_t E1 = (dmd->data[0])+(dmd->data[1])*256+(dmd->data[2])*65536+(dmd->data[3])*16777216; 
+    uint32_t E2 = (dmd->data[4])+(dmd->data[5])*256+(dmd->data[6])*65536+(dmd->data[7])*16777216; 
+    for(int i=0;i<dmd->data_size;i++){
+      MW_printf("[%4d]",dmd->data[i]);
+    }
+    //MW_printf("\n<E1>:[%10d] <E2>:[%10d]",E1,E2);
   }else{
     for(int i=0;i<dmd->data_size;i++){
       MW_printf("[%02x]",dmd->data[i]);
