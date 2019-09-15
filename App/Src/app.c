@@ -21,11 +21,15 @@ int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
 /********/
 
 static
-MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration);
+MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination);
+static
+MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination);
 static
 MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration, MovingDestination_t mode);
 static
 int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust,  double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode);
+static
+int decide_turn_degree(double *right_duty_adjust, double *left_duty_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode);
 static
 SteeringSituation_t steering_spin_to_target(int target,int target_motor);
 static
@@ -40,6 +44,8 @@ static
 int odmetry_position_recent(double position[MOVE_SAMPLE_VALUE][3], int recet);
 static
 NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double zahyou_1[2], double zahyou_2[2], double *return_degree, double *return_distance);
+static
+FirstUpMecha_t first_up_mecha_move(FirstUpMecha_t mode);
 static
 void fill_array(double array1[], double array2[], int size);
 
@@ -96,7 +102,8 @@ int appTask(void){
   static bool encoder1_reset = false;
   static bool encoder2_reset = false;
 
-  static double position[3];
+  static double position[3] = {};
+  static double recent_position[MOVE_SAMPLE_VALUE][3] = {};
 
   static TestMode_t now_mode = STOP_EVERYTHING;
   
@@ -166,8 +173,9 @@ int appTask(void){
       target_zahyou_1[0] = 0.0;
       target_zahyou_1[1] = 0.0;
       target_zahyou_2[0] = 0.0;
-      target_zahyou_2[1] = 5500.0;
-      now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true);
+      target_zahyou_2[1] = 5700.0;
+      /* now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true); */
+      now_moving_situation = go_to_target_2(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
     }
     break;//////////////////////////////////////////////////////
   case MANUAL_SUSPENSION:
@@ -224,14 +232,11 @@ int appTask(void){
 
     
     if(__RC_ISPRESSED_L1(g_rc_data)){//SPIN_M
-      g_md_h[ARM_UP_MD].mode = D_MMOD_FORWARD;
-      g_md_h[ARM_UP_MD].duty = ARM_UP_MAXDUTY;
+      first_up_mecha_move(FIRST_UP_MECHA_UP);
     }else if(__RC_ISPRESSED_L2(g_rc_data)){
-      g_md_h[ARM_UP_MD].mode = D_MMOD_BACKWARD;
-      g_md_h[ARM_UP_MD].duty = ARM_UP_MAXDUTY;
+      first_up_mecha_move(FIRST_UP_MECHA_DOWN);
     }else{
-      g_md_h[ARM_UP_MD].mode = D_MMOD_BRAKE;
-      g_md_h[ARM_UP_MD].duty = 0;
+      first_up_mecha_move(FIRST_UP_MECHA_STOP);
     }
     
     
@@ -251,6 +256,7 @@ int appTask(void){
     I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE);
     I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE);
     ret = odmetry_position(position,1);
+    ret = odmetry_position_recent(recent_position,1);
   }
 
   ret = ABSystem();
@@ -264,9 +270,9 @@ int appTask(void){
   }
 
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("now_position[x][y][w] : [%10d][%10d][%10d]\n",(int)position[0],(int)position[1],(int)(position[2]*100.0));
     MW_printf("mode : [%30s]\n",testmode_name[now_mode]);
     MW_printf("moving_situ : [%20s]\n",moving_situation_name[now_moving_situation]);
-    MW_printf("now_position[x][y][w] : [%10d][%10d][%10d]\n",(int)position[0],(int)position[1],(int)(position[2]*100.0));
 
     MW_printf("Encoder_target[%3d]\n",mun_sus_target);
     if(_IS_PRESSED_FIRST_UP_LIMITSW()){
@@ -295,7 +301,7 @@ int appTask(void){
 }
 
 static
-MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration){
+MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination){
   static SteeringSituation_t steering_situation[2];
   MovingSituation_t situation;
   static MovingDestination_t mode;
@@ -329,10 +335,10 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
     switch(mode){
     case PLUS_Y:
       if(!steering_situation[0]){
-	steering_situation[0] = steering_spin_to_target(-1+R_F_DEG_ADJUST,1);
+	steering_situation[0] = steering_spin_to_target(0+R_F_DEG_ADJUST,1);//-1
       }
       if(!steering_situation[1]){
-	steering_situation[1] = steering_spin_to_target(1+L_B_DEG_ADJUST,2);
+	steering_situation[1] = steering_spin_to_target(0+L_B_DEG_ADJUST,2);//1
       }
       break;
     case MINUS_Y:
@@ -353,10 +359,10 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       break;
     case MINUS_X:
       if(!steering_situation[0]){
-	steering_situation[0] = steering_spin_to_target(92+R_F_DEG_ADJUST,1);
+	steering_situation[0] = steering_spin_to_target(90+R_F_DEG_ADJUST,1);//92
       }
       if(!steering_situation[1]){
-	steering_situation[1] = steering_spin_to_target(86+L_B_DEG_ADJUST,2);
+	steering_situation[1] = steering_spin_to_target(90+L_B_DEG_ADJUST,2);//86
       }
       break;
     }
@@ -374,14 +380,20 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
 
     switch(mode){
     case PLUS_Y:
+      steering_spin_to_target(-1+R_F_DEG_ADJUST,1);
+      steering_spin_to_target(1+L_B_DEG_ADJUST,2);
+      break;
     case MINUS_Y:
       steering_spin_to_target(0+R_F_DEG_ADJUST,1);
       steering_spin_to_target(0+L_B_DEG_ADJUST,2);
       break;
     case PLUS_X:
-    case MINUS_X:
       steering_spin_to_target(90+R_F_DEG_ADJUST,1);
       steering_spin_to_target(90+L_B_DEG_ADJUST,2);
+      break;
+    case MINUS_X:
+      steering_spin_to_target(92+R_F_DEG_ADJUST,1);
+      steering_spin_to_target(86+L_B_DEG_ADJUST,2);
       break;
     }
     
@@ -404,7 +416,9 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
 	left_duty = straight_duty + left_duty_adjust;
 	if(right_duty < 0.0) right_duty = 0.0;
 	if(left_duty < 0.0) left_duty = 0.0;
-	//}
+	if(right_duty > 9999.0) right_duty = 9999.0;
+	if(left_duty > 9999.0) left_duty = 9999.0;
+	/* } */
       switch(mode){
       case PLUS_Y:
       case MINUS_X:
@@ -437,12 +451,141 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
 	g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
 	break;
       }
-      g_md_h[R_F_KUDO_MD].duty = (int)((right_duty)*R_F_KUDO_ADJUST);
-      g_md_h[L_B_KUDO_MD].duty = (int)((left_duty)*L_B_KUDO_ADJUST);
-      if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-	MW_printf("right_duty[%4d]",(int)right_duty);
-	MW_printf("left_duty[%4d]",(int)left_duty);
+      g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+      g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+      /* if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){ */
+      /* 	MW_printf("right_duty[%4d]",(int)right_duty); */
+      /* 	MW_printf("left_duty[%4d]",(int)left_duty); */
+      /* } */
+    }
+  }
+  
+  return situation;
+}
+
+static
+MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination){
+  static SteeringSituation_t steering_situation[2];
+  MovingSituation_t situation;
+  static MovingDestination_t mode;
+  double straight_duty,right_degree_adjust,left_degree_adjust,right_duty,left_duty;
+  static double recent_zahyou_1[2]={},recent_zahyou_2[2]={};
+  static double position[MOVE_SAMPLE_VALUE][3] = {};
+  static first_flag = false;
+
+  if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
+    first_flag = true;
+    recent_zahyou_1[0] = zahyou_1[0];
+    recent_zahyou_1[1] = zahyou_1[1];
+    recent_zahyou_2[0] = zahyou_2[0];
+    recent_zahyou_2[1] = zahyou_2[1];
+    if(zahyou_2[0]-zahyou_1[0]==0.0){
+      if(zahyou_2[1]-zahyou_1[1] >= 0.0){
+	mode = PLUS_Y;
+      }else{
+	mode = MINUS_Y;
       }
+    }else if(zahyou_2[1]-zahyou_1[1]==0.0){
+      if(zahyou_2[0]-zahyou_1[0] >= 0.0){
+	mode = PLUS_X;
+      }else{
+	mode = MINUS_X;
+      }
+    }
+  }
+
+  if(first_flag){
+    switch(mode){
+    case PLUS_Y:
+      if(!steering_situation[0]){
+	steering_situation[0] = steering_spin_to_target(0+R_F_DEG_ADJUST,1);//-1
+      }
+      if(!steering_situation[1]){
+	steering_situation[1] = steering_spin_to_target(0+L_B_DEG_ADJUST,2);//1
+      }
+      break;
+    case MINUS_Y:
+      if(!steering_situation[0]){
+	steering_situation[0] = steering_spin_to_target(0+R_F_DEG_ADJUST,1);
+      }
+      if(!steering_situation[1]){
+	steering_situation[1] = steering_spin_to_target(0+L_B_DEG_ADJUST,2);
+      }
+      break;
+    case PLUS_X:
+      if(!steering_situation[0]){
+	steering_situation[0] = steering_spin_to_target(90+R_F_DEG_ADJUST,1);
+      }
+      if(!steering_situation[1]){
+	steering_situation[1] = steering_spin_to_target(90+L_B_DEG_ADJUST,2);
+      }
+      break;
+    case MINUS_X:
+      if(!steering_situation[0]){
+	steering_situation[0] = steering_spin_to_target(90+R_F_DEG_ADJUST,1);//92
+      }
+      if(!steering_situation[1]){
+	steering_situation[1] = steering_spin_to_target(90+L_B_DEG_ADJUST,2);//86
+      }
+      break;
+    }
+    if(steering_situation[0]==STEERING_STOP && steering_situation[1]==STEERING_STOP){
+      first_flag = false;
+      steering_situation[0] = false;
+      steering_situation[1] = false;
+      situation = SPIN_END;
+    }
+    situation = SPIN_STEERING;
+  }else{
+    odmetry_position_recent(position, 0);
+    situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
+    decide_turn_degree(&right_degree_adjust, &left_degree_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
+
+    switch(mode){
+    case PLUS_Y:
+      steering_spin_to_target((int)round(right_degree_adjust)+R_F_DEG_ADJUST,1);
+      steering_spin_to_target((int)round(left_degree_adjust)+L_B_DEG_ADJUST,2);
+      break;
+    case MINUS_Y:
+      steering_spin_to_target((int)round(left_degree_adjust)+R_F_DEG_ADJUST,1);
+      steering_spin_to_target((int)round(right_degree_adjust)+L_B_DEG_ADJUST,2);
+      break;
+    case PLUS_X:
+      steering_spin_to_target((int)round(-left_degree_adjust)+90+R_F_DEG_ADJUST,1);
+      steering_spin_to_target((int)round(-right_degree_adjust)+90+L_B_DEG_ADJUST,2);
+      break;
+    case MINUS_X:
+      steering_spin_to_target((int)round(-right_degree_adjust)+90+R_F_DEG_ADJUST,1);
+      steering_spin_to_target((int)round(-left_degree_adjust)+90+L_B_DEG_ADJUST,2);
+      break;
+    }
+    
+    if(situation == ARRIVED_TARGET){
+      g_md_h[R_F_KUDO_MD].duty = 0;
+      g_md_h[L_B_KUDO_MD].duty = 0;
+      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+    }else{
+	right_duty = straight_duty;
+	left_duty = straight_duty;
+	if(right_duty < 0.0) right_duty = 0.0;
+	if(left_duty < 0.0) left_duty = 0.0;
+	if(right_duty > 9999.0) right_duty = 9999.0;
+	if(left_duty > 9999.0) left_duty = 9999.0;
+      switch(mode){
+      case PLUS_Y:
+      case MINUS_X:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	break;
+      case PLUS_X:
+      case MINUS_Y:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	break;
+      }
+      g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+      g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
     }
   }
   
@@ -501,7 +644,8 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
 	situation = CONSTANT_SPEED;
       }
     }else{
-      *return_duty = -max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty;
+      *return_duty = -max_duty * (distance_to_target/1000.0 - 1.1)*(distance_to_target/1000.0 - 1.1) + max_duty;
+      /* *return_duty = -max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty; */
       /* *return_duty = max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty; */
       if(*return_duty <= SUS_LOW_DUTY) *return_duty = SUS_LOW_DUTY;
       if(*return_duty > max_duty) *return_duty = max_duty;
@@ -539,6 +683,10 @@ int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double
   }
   now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
 
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("degree:[%4d] distance:[%4d]\n",(int)round(degree),(int)round(distance));
+  }
+  
   if(distance > MOVE_ACCEPTABLE_WIDTH){
     switch(now_position){
     case NOW_POSITION_RIGHT:
@@ -602,6 +750,77 @@ int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double
 }
 
 static
+int decide_turn_degree(double *right_degree_adjust, double *left_degree_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode){
+  MovingSituation_t situation;
+  NowPosition_t now_position;
+  double degree,distance;
+  double get_x[MOVE_SAMPLE_VALUE],get_y[MOVE_SAMPLE_VALUE];
+  double right_adjust_value=0.0,left_adjust_value=0.0;
+  int i;
+  
+  for(i=0; i<MOVE_SAMPLE_VALUE; i++){
+    get_x[i] = position[i][0];
+    get_y[i] = position[i][1];
+  }
+  now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
+
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("degree:[%4d] distance:[%4d]\n",(int)round(degree),(int)round(distance));
+  }
+  
+  if(distance > MOVE_ACCEPTABLE_WIDTH){
+    switch(now_position){
+    case NOW_POSITION_RIGHT:
+      if(distance <= 50.0){
+	right_adjust_value = 2.0;
+      }else if(distance >= 400.0){
+	right_adjust_value = 16.0;
+      }else{
+	right_adjust_value = distance / 25.0;
+      }
+      break;
+    case NOW_POSITION_LEFT:
+      if(distance <= 50.0){
+	left_adjust_value = 2.0;
+      }else if(distance*2.0 >= 400.0){
+	left_adjust_value = 16.0;
+      }else{
+	left_adjust_value = distance / 25.0;
+      }
+      break;
+    default:
+      break;
+    }
+  }else{
+    if(degree > 0.0){
+      right_adjust_value = degree*2.0;
+    }else if(degree < 0.0){
+      left_adjust_value = fabs(degree*2.0);
+    }
+  }
+
+  if(fabs(right_adjust_value) > 16.0){
+    if(right_adjust_value > 0.0){
+      right_adjust_value = 16.0;
+    }else{
+      right_adjust_value = -16.0;
+    }
+  }
+  if(fabs(left_adjust_value) > 16.0){
+    if(left_adjust_value > 0.0){
+      left_adjust_value = 16.0;
+    }else{
+      left_adjust_value = -16.0;
+    }
+  }
+
+  *right_degree_adjust = right_adjust_value; 
+  *left_degree_adjust = left_adjust_value; 
+  
+  return 0;
+}
+
+static
 SteeringSituation_t steering_spin_to_target(int target,int target_motor){
   const int32_t encoder_ppr = (512)*4;
   const int div = (2048*4)/encoder_ppr;
@@ -656,7 +875,7 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
       break;
     }
     encoder_degree = encoder % encoder_ppr;
-    target_degree  = (int)(((double)encoder_ppr/360.0)*(double)target);
+    target_degree  = (int)round(((double)encoder_ppr/360.0)*(double)target);
   
   
     if(encoder_degree < 0){
@@ -673,7 +892,7 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
       }
     }
     if(diff_from_target > 0){
-      g_md_h[j].duty = (int)duty;
+      g_md_h[j].duty = (int)round(duty);
       if(duty==0.0){
 	g_md_h[j].mode = D_MMOD_BRAKE;
 	motor_set[j] = true;
@@ -682,7 +901,7 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
 	motor_set[j] = false;
       }
     }else{
-      g_md_h[j].duty = (int)duty;
+      g_md_h[j].duty = (int)round(duty);
       if(duty==0.0){
 	g_md_h[j].mode = D_MMOD_BRAKE;
 	motor_set[j] = true;
@@ -713,10 +932,10 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
     if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
       switch(j){
       case 0:
-	MW_printf("E1_degree[%3d]\n",(int)((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
+	MW_printf("E1_degree[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
 	break;
       case 1:
-	MW_printf("E2_degree[%3d]\n",(int)((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
+	MW_printf("E2_degree[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
 	break;
       }
     }
@@ -759,6 +978,42 @@ int get_diff(int target,int now_degree,int encoder_ppr){
   if(target_adjust>=encoder_ppr) target_adjust = target_adjust % encoder_ppr;
   if(target_adjust<0) target_adjust = encoder_ppr - abs(target_adjust);
   return target_adjust - encoder_ppr/2;
+}
+
+static
+FirstUpMecha_t first_up_mecha_move(FirstUpMecha_t mode){
+  //static bool up_sw_flag=false,under_sw_flag=false;
+  FirstUpMecha_t return_mode;
+  switch(mode){
+  case FIRST_UP_MECHA_UP:
+    if(!_IS_PRESSED_FIRST_UP_LIMITSW()){
+      g_md_h[ARM_UP_MD].mode = D_MMOD_FORWARD;
+      g_md_h[ARM_UP_MD].duty = ARM_UP_MAXDUTY;
+      return_mode = FIRST_UP_MECHA_UP;
+    }else{
+      g_md_h[ARM_UP_MD].mode = D_MMOD_BRAKE;
+      g_md_h[ARM_UP_MD].duty = 0;
+      return_mode = FIRST_UP_MECHA_STOP;
+    }
+    break;
+  case FIRST_UP_MECHA_DOWN:
+    if(!_IS_PRESSED_FIRST_UNDER_LIMITSW()){
+      g_md_h[ARM_UP_MD].mode = D_MMOD_BACKWARD;
+      g_md_h[ARM_UP_MD].duty = ARM_UP_MAXDUTY;
+      return_mode = FIRST_UP_MECHA_DOWN;
+    }else{
+      g_md_h[ARM_UP_MD].mode = D_MMOD_BRAKE;
+      g_md_h[ARM_UP_MD].duty = 0;
+      return_mode = FIRST_UP_MECHA_STOP;
+    }
+    break;
+  case FIRST_UP_MECHA_STOP:
+    g_md_h[ARM_UP_MD].mode = D_MMOD_BRAKE;
+    g_md_h[ARM_UP_MD].duty = 0;
+    return_mode = FIRST_UP_MECHA_STOP;
+    break;
+  }
+  return return_mode;
 }
 
 static int LEDSystem(void){
@@ -932,20 +1187,35 @@ int odmetry_position(double position[3], int recet){
   }
   
   if(!matrix_init){
-    cal_matrix[0][0] = -0.055815556002182089637945390335639840362915960837233;
-    cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796;
-    cal_matrix[0][2] =  0.055815556002182089637945390335639840362915960837233;
-    cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039;
+    cal_matrix[0][0] = -0.05581555600218208963794;
+    cal_matrix[0][1] = -0.54530707169312928881104;
+    cal_matrix[0][2] =  0.05581555600218208963794;
+    cal_matrix[0][3] =  0.45469292830687071188951;
     
-    cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000;
-    cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000;
-    cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000;
-    cal_matrix[1][3] =  0.0000000000000000000000000000000000000000000000000;
+    cal_matrix[1][0] = -0.50000000000000000000000;
+    cal_matrix[1][1] =  0.00000000000000000000000;
+    cal_matrix[1][2] = -0.00000000000000000000000;
+    cal_matrix[1][3] =  0.00000000000000000000000;
 
-    cal_matrix[2][0] =  0.3014040024117832840449051078124551379597461885211;
-    cal_matrix[2][1] =  0.2446581871428981595796606276378879669241149616699;
-    cal_matrix[2][2] = -0.3014040024117832840449051078124551379597461885211;
-    cal_matrix[2][3] =  0.2446581871428981595796606276378879669241149616699;
+    cal_matrix[2][0] =  0.30140400241178328404490;
+    cal_matrix[2][1] =  0.24465818714289815957966;
+    cal_matrix[2][2] = -0.30140400241178328404490;
+    cal_matrix[2][3] =  0.24465818714289815957966;
+
+    /* cal_matrix[0][0] = -0.055815556002182089637945390335639840362915960837233; */
+    /* cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796; */
+    /* cal_matrix[0][2] =  0.055815556002182089637945390335639840362915960837233; */
+    /* cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039; */
+    
+    /* cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000; */
+    /* cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000; */
+    /* cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000; */
+    /* cal_matrix[1][3] =  0.0000000000000000000000000000000000000000000000000; */
+
+    /* cal_matrix[2][0] =  0.3014040024117832840449051078124551379597461885211; */
+    /* cal_matrix[2][1] =  0.2446581871428981595796606276378879669241149616699; */
+    /* cal_matrix[2][2] = -0.3014040024117832840449051078124551379597461885211; */
+    /* cal_matrix[2][3] =  0.2446581871428981595796606276378879669241149616699; */
 
     matrix_init = true;
   }
@@ -985,7 +1255,7 @@ int odmetry_position(double position[3], int recet){
   }
   return_position_val[2] = return_position[2] * (5.0/1536.0);
   return_position_val[2] = fmod(return_position_val[2], 360.00000);
-  if(fabs(return_position_val[2]) >= 180.000000000000000000000000000000000){
+  if(fabs(return_position_val[2]) >= 180.0000000000000000000){
     if(return_position_val[2] >= 0.0){
       return_position_val[2] -= 360.000;
     }else{
@@ -1104,7 +1374,7 @@ NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VAL
   
   if(!x_move_flag && !y_move_flag){
     position = NOW_POSITION_STOP;
-    *return_degree = 0;
+    *return_degree = 0.0;
     *return_distance = distance;
     return position;
   }else{
@@ -1244,7 +1514,8 @@ int all_motor_stop(void){
 
 static
 void fill_array(double array1[], double array2[], int size){
-  for(int i=0;i<size;i++){
+  int i;
+  for(i=0;i<size;i++){
     array1[i] = array2[i];
   }
 }

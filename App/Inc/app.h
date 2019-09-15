@@ -59,8 +59,8 @@ int appInit(void);
 #define R_F_DEG_DUTY_ADJUST 0.92
 #define L_B_DEG_DUTY_ADJUST 1.0
 
-#define R_F_DEG_ADJUST 179
-#define L_B_DEG_ADJUST 176
+#define R_F_DEG_ADJUST 180
+#define L_B_DEG_ADJUST 175
 
 #define ARM_UP_MAXDUTY (5000*VOLTAGE_ADJUST)
 #define ARM_SPIN_MAXDUTY (3000*VOLTAGE_ADJUST) //gyaku
@@ -139,6 +139,12 @@ typedef enum{
   STEERING_NOW = 0,
   STEERING_STOP = 1,
 }SteeringSituation_t;
+
+typedef enum{
+  FIRST_UP_MECHA_UP = 0,
+  FIRST_UP_MECHA_DOWN = 1,
+  FIRST_UP_MECHA_STOP = 2,
+}FirstUpMecha_t;
 
 #endif
 
