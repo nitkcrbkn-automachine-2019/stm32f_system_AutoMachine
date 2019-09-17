@@ -67,7 +67,7 @@ int appInit(void);
 
 #define STRAIGHT_MAX_DUTY 8000
 
-#define SUS_LOW_DUTY 1500.0
+#define SUS_LOW_DUTY 1600.0
 
 #define ARM_UP_MD 4
 #define ARM_SPIN_MD 5 
@@ -97,7 +97,7 @@ int appInit(void);
 /****以下追加分*****************/
 
 #define MOVE_SAMPLE_VALUE 20 //←のポジションデータで自己位置推定
-#define MOVE_ACCEPTABLE_WIDTH 10.0 //←*2の幅が移動時の許容
+#define MOVE_ACCEPTABLE_WIDTH 20.0 //←*2の幅が移動時の許容
 
 typedef enum{
   GET_ENCODER_VALUE = 0,

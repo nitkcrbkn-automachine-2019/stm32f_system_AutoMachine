@@ -95,6 +95,9 @@ int main(void){
 	sensor_area_wait_count = 0;
       }
 #endif
+      if( g_SY_system_counter % 1000 == 0){
+	MW_printf("\033[2J");
+      }
       MW_printf("\033[1;1H");//カーソルを(1,1)にセットして
       DD_RCPrint((uint8_t*)g_rc_data);//RCのハンドラを表示します
       DD_print();//各デバイスハンドラを表示します

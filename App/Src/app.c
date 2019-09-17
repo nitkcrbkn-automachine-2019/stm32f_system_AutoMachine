@@ -22,7 +22,7 @@ int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
 
 static
 MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination);
-static
+static 
 MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination);
 static
 MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], double max_duty, bool acceleration, MovingDestination_t mode);
@@ -111,9 +111,13 @@ int appTask(void){
   static bool up_flag,down_flag,right_flag,left_flag;
   static bool r1_flag,r2_flag,l1_flag,l2_flag;
 
-  double target_zahyou_1[2],target_zahyou_2[2];
+  static double target_zahyou_1[2],target_zahyou_2[2];
 
   static MovingSituation_t now_moving_situation = SPIN_STEERING;
+
+  int right_degree,left_degree;
+
+  static moving_count = 0;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -169,13 +173,72 @@ int appTask(void){
     }
     if(!test_flag){
       all_motor_stop();
+      moving_count = 0;
     }else{
-      target_zahyou_1[0] = 0.0;
-      target_zahyou_1[1] = 0.0;
-      target_zahyou_2[0] = 0.0;
-      target_zahyou_2[1] = 5700.0;
-      /* now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true); */
-      now_moving_situation = go_to_target_2(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
+      switch(moving_count){
+      case 0:
+	target_zahyou_1[0] = 0.0;
+	target_zahyou_1[1] = 0.0;
+	target_zahyou_2[0] = 0.0;
+	target_zahyou_2[1] = 5700.0;
+	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4500.0, true, true);
+	if(now_moving_situation == ARRIVED_TARGET){
+	  moving_count++;
+	}
+	break;
+      case 1:
+      	target_zahyou_1[0] = 0.0;
+      	target_zahyou_1[1] = 5700.0;
+      	target_zahyou_2[0] = -1650.0;
+      	target_zahyou_2[1] = 5700.0;
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+      	  moving_count++;
+      	}
+      	break;
+      case 2:
+      	target_zahyou_1[0] = -1650.0;
+      	target_zahyou_1[1] = 5700.0;
+      	target_zahyou_2[0] = -1650.0;
+      	target_zahyou_2[1] = 6200.0;
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+      	  moving_count++;
+      	}
+      	break;
+      case 3:
+      	target_zahyou_1[0] = -1650.0;
+      	target_zahyou_1[1] = 6200.0;
+      	target_zahyou_2[0] = -1650.0;
+      	target_zahyou_2[1] = 6000.0;
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+      	  moving_count++;
+      	}
+      	break;
+      case 4:
+      	target_zahyou_1[0] = -1650.0;
+      	target_zahyou_1[1] = 6000.0;
+      	target_zahyou_2[0] = -1650.0;
+      	target_zahyou_2[1] = 6100.0;
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+      	  moving_count++;
+      	}
+      	break;
+      case 5:
+      	target_zahyou_1[0] = -1650.0;
+      	target_zahyou_1[1] = 6100.0;
+      	target_zahyou_2[0] = -3450.0;
+      	target_zahyou_2[1] = 6100.0;
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+      	  moving_count++;
+      	}
+      	break;
+      }
+      //now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
+      //now_moving_situation = go_to_target_2(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
     }
     break;//////////////////////////////////////////////////////
   case MANUAL_SUSPENSION:
@@ -230,7 +293,6 @@ int appTask(void){
       g_md_h[ARM_SPIN_MD].duty = 0;
     }
 
-    
     if(__RC_ISPRESSED_L1(g_rc_data)){//SPIN_M
       first_up_mecha_move(FIRST_UP_MECHA_UP);
     }else if(__RC_ISPRESSED_L2(g_rc_data)){
@@ -239,14 +301,17 @@ int appTask(void){
       first_up_mecha_move(FIRST_UP_MECHA_STOP);
     }
     
-    
     break; /////////////////////////////////////////////////
-    
+
+  default:
+    break;
   }
 
-  ret = odmetry_position(position,0);
-  if(ret){
-    return ret;
+  if(now_mode != AUTO_TEST){
+    ret = odmetry_position(position,0);
+    if(ret){
+      return ret;
+    }
   }
 
   
@@ -270,7 +335,6 @@ int appTask(void){
   }
 
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-    MW_printf("now_position[x][y][w] : [%10d][%10d][%10d]\n",(int)position[0],(int)position[1],(int)(position[2]*100.0));
     MW_printf("mode : [%30s]\n",testmode_name[now_mode]);
     MW_printf("moving_situ : [%20s]\n",moving_situation_name[now_moving_situation]);
 
@@ -392,8 +456,8 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       steering_spin_to_target(90+L_B_DEG_ADJUST,2);
       break;
     case MINUS_X:
-      steering_spin_to_target(92+R_F_DEG_ADJUST,1);
-      steering_spin_to_target(86+L_B_DEG_ADJUST,2);
+      steering_spin_to_target(90+R_F_DEG_ADJUST,1);
+      steering_spin_to_target(90+L_B_DEG_ADJUST,2);
       break;
     }
     
@@ -434,6 +498,8 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
 	/* } */
 	g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
 	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+	g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
 	break;
       case PLUS_X:
       case MINUS_Y:
@@ -449,10 +515,12 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
 	/* } */
 	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
 	g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+	g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
 	break;
       }
-      g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
-      g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+      /* g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST); */
+      /* g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST); */
       /* if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){ */
       /* 	MW_printf("right_duty[%4d]",(int)right_duty); */
       /* 	MW_printf("left_duty[%4d]",(int)left_duty); */
@@ -463,16 +531,17 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
   return situation;
 }
 
-static
+static 
 MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination){
-  static SteeringSituation_t steering_situation[2];
+  static SteeringSituation_t steering_situation[2] = {false,false};
   MovingSituation_t situation;
   static MovingDestination_t mode;
-  double straight_duty,right_degree_adjust,left_degree_adjust,right_duty,left_duty;
+  static double straight_duty,right_degree_adjust,left_degree_adjust,right_duty,left_duty;
   static double recent_zahyou_1[2]={},recent_zahyou_2[2]={};
   static double position[MOVE_SAMPLE_VALUE][3] = {};
   static first_flag = false;
-
+  static int deg_adjust_temp;
+  
   if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
     first_flag = true;
     recent_zahyou_1[0] = zahyou_1[0];
@@ -541,22 +610,26 @@ MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double 
     situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
     decide_turn_degree(&right_degree_adjust, &left_degree_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
 
+    if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+      MW_printf("R_DEG_ADJUST:[%4d] L_DEG_ADJUST:[%4d]\n",(int)round(right_degree_adjust),(int)round(left_degree_adjust));
+    }
+    
     switch(mode){
     case PLUS_Y:
-      steering_spin_to_target((int)round(right_degree_adjust)+R_F_DEG_ADJUST,1);
-      steering_spin_to_target((int)round(left_degree_adjust)+L_B_DEG_ADJUST,2);
+      steering_situation[0] = steering_spin_to_target((int)round(right_degree_adjust)+(int)R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target((int)round(left_degree_adjust)+(int)L_B_DEG_ADJUST,2);
       break;
     case MINUS_Y:
-      steering_spin_to_target((int)round(left_degree_adjust)+R_F_DEG_ADJUST,1);
-      steering_spin_to_target((int)round(right_degree_adjust)+L_B_DEG_ADJUST,2);
+      steering_situation[0] = steering_spin_to_target((int)round(left_degree_adjust)+R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target((int)round(right_degree_adjust)+L_B_DEG_ADJUST,2);
       break;
     case PLUS_X:
-      steering_spin_to_target((int)round(-left_degree_adjust)+90+R_F_DEG_ADJUST,1);
-      steering_spin_to_target((int)round(-right_degree_adjust)+90+L_B_DEG_ADJUST,2);
+      steering_situation[0] = steering_spin_to_target((int)round(-left_degree_adjust)+90+R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target((int)round(-right_degree_adjust)+90+L_B_DEG_ADJUST,2);
       break;
     case MINUS_X:
-      steering_spin_to_target((int)round(-right_degree_adjust)+90+R_F_DEG_ADJUST,1);
-      steering_spin_to_target((int)round(-left_degree_adjust)+90+L_B_DEG_ADJUST,2);
+      steering_situation[0] = steering_spin_to_target((int)round(-right_degree_adjust)+90+R_F_DEG_ADJUST,1);
+      steering_situation[1] = steering_spin_to_target((int)round(-left_degree_adjust)+90+L_B_DEG_ADJUST,2);
       break;
     }
     
@@ -644,7 +717,7 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
 	situation = CONSTANT_SPEED;
       }
     }else{
-      *return_duty = -max_duty * (distance_to_target/1000.0 - 1.1)*(distance_to_target/1000.0 - 1.1) + max_duty;
+      *return_duty = -max_duty * (distance_to_target/1000.0 - 1.15)*(distance_to_target/1000.0 - 1.15) + max_duty;
       /* *return_duty = -max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty; */
       /* *return_duty = max_duty * (distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0)*(distance_to_target/1000.0 - 1.0) + max_duty; */
       if(*return_duty <= SUS_LOW_DUTY) *return_duty = SUS_LOW_DUTY;
@@ -683,63 +756,119 @@ int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double
   }
   now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
 
+  degree = position[0][2];
+  
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
     MW_printf("degree:[%4d] distance:[%4d]\n",(int)round(degree),(int)round(distance));
+  }
+
+  switch(mode){
+  case PLUS_X:
+    if(zahyou_1[1]-get_y[0] < 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else if(zahyou_1[1]-get_y[0] > 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case MINUS_X:
+    if(zahyou_1[1]-get_y[0] < 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else if(zahyou_1[1]-get_y[0] > 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case PLUS_Y:
+    if(zahyou_1[0]-get_x[0] < 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else if(zahyou_1[0]-get_x[0] > 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case MINUS_Y:
+    if(zahyou_1[0]-get_x[0] < 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else if(zahyou_1[0]-get_x[0] > 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
   }
   
   if(distance > MOVE_ACCEPTABLE_WIDTH){
     switch(now_position){
     case NOW_POSITION_RIGHT:
-      if(distance*2.0 <= 200.0){
-	right_adjust_value = 200.0;
+      if(distance*2.0 <= 100.0){
+	right_adjust_value = 150.0;
       }else if(distance*2.0 >= 600.0){
 	right_adjust_value = 600.0;
       }else{
-	right_adjust_value = distance * 2.0;
+	right_adjust_value = distance * 3.0;
       }
       if(degree > 0.0){
-	right_adjust_value += degree * 200.0;
-	left_adjust_value  -= degree * 200.0;
+	right_adjust_value += degree * 125.0;
+	//left_adjust_value  -= degree * 200.0;
+      }
+      if(degree < 0.0){
+	right_adjust_value -= degree * 125.0;
+	//left_adjust_value  -= degree * 200.0;
       }
       break;
     case NOW_POSITION_LEFT:
-      if(distance*2.0 <= 200.0){
-	left_adjust_value = 200.0;
+      if(distance*2.0 <= 100.0){
+	left_adjust_value = 150.0;
       }else if(distance*2.0 >= 600.0){
 	left_adjust_value = 600.0;
       }else{
-	left_adjust_value = distance * 2.0;
+	left_adjust_value = distance * 3.0;
       }
       if(degree < 0.0){
-	left_adjust_value += fabs(degree * 200.0);
-	right_adjust_value -= fabs(degree * 200.0);
+	left_adjust_value += fabs(degree * 125.0);
+	/* right_adjust_value -= fabs(degree * 200.0); */
+      }
+      if(degree > 0.0){
+	left_adjust_value -= fabs(degree * 125.0);
+	/* right_adjust_value -= fabs(degree * 200.0); */
       }
       break;
-    default:
+    case NOW_POSITION_CENTER:
+      if(degree > 0.0){
+	right_adjust_value = degree*150.0 + 75.0;
+	//left_adjust_value  = -(degree*100.0 + 100.0);
+      }else if(degree < 0.0){
+	left_adjust_value = fabs(degree*150.0 + 75.0);
+	//right_adjust_value = -fabs(degree*200.0 + 200.0);
+      } 
       break;
     }
   }else{
     if(degree > 0.0){
-      right_adjust_value = degree*200.0 + 200.0;
-      left_adjust_value  = -(degree*200.0 + 200.0);
+      right_adjust_value = degree*150.0 + 75.0;
+      //left_adjust_value  = -(degree*100.0 + 100.0);
     }else if(degree < 0.0){
-      left_adjust_value = fabs(degree*200.0 + 200.0);
-      right_adjust_value = -fabs(degree*200.0 + 200.0);
+      left_adjust_value = fabs(degree*150.0 + 75.0);
+      //right_adjust_value = -fabs(degree*200.0 + 200.0);
     }
   }
 
-  if(fabs(right_adjust_value) > 800.0){
+  if(fabs(right_adjust_value) > 850.0){
     if(right_adjust_value > 0.0){
-      right_adjust_value = 800.0;
+      right_adjust_value = 850.0;
     }else{
-      right_adjust_value = -800.0;
+      right_adjust_value = -850.0;
     }
   }
-  if(fabs(left_adjust_value) > 800.0){
+  if(fabs(left_adjust_value) > 850.0){
     if(left_adjust_value > 0.0){
-      left_adjust_value = 800.0;
+      left_adjust_value = 850.0;
     }else{
-      left_adjust_value = -800.0;
+      left_adjust_value = -850.0;
     }
   }
 
@@ -753,10 +882,13 @@ static
 int decide_turn_degree(double *right_degree_adjust, double *left_degree_adjust, double straight_duty, double zahyou_1[2], double zahyou_2[2], double position[MOVE_SAMPLE_VALUE][3], MovingDestination_t mode){
   MovingSituation_t situation;
   NowPosition_t now_position;
-  double degree,distance;
-  double get_x[MOVE_SAMPLE_VALUE],get_y[MOVE_SAMPLE_VALUE];
-  double right_adjust_value=0.0,left_adjust_value=0.0;
+  static double degree,distance;
+  static double get_x[MOVE_SAMPLE_VALUE],get_y[MOVE_SAMPLE_VALUE];
+  static double right_adjust_value=0.0,left_adjust_value=0.0;
   int i;
+
+  right_adjust_value = 0.0;
+  left_adjust_value = 0.0;
   
   for(i=0; i<MOVE_SAMPLE_VALUE; i++){
     get_x[i] = position[i][0];
@@ -764,53 +896,113 @@ int decide_turn_degree(double *right_degree_adjust, double *left_degree_adjust, 
   }
   now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
 
-  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-    MW_printf("degree:[%4d] distance:[%4d]\n",(int)round(degree),(int)round(distance));
+  degree = position[0][2];
+  
+  switch(mode){
+  case PLUS_X:
+    if(zahyou_1[1]-get_y[0] < 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else if(zahyou_1[1]-get_y[0] > 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case MINUS_X:
+    if(zahyou_1[1]-get_y[0] < 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else if(zahyou_1[1]-get_y[0] > 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case PLUS_Y:
+    if(zahyou_1[0]-get_x[0] < 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else if(zahyou_1[0]-get_x[0] > 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
+  case MINUS_Y:
+    if(zahyou_1[0]-get_x[0] < 0.0){
+      now_position = NOW_POSITION_LEFT;
+    }else if(zahyou_1[0]-get_x[0] > 0.0){
+      now_position = NOW_POSITION_RIGHT;
+    }else{
+      now_position = NOW_POSITION_CENTER;
+    }
+    break;
   }
   
-  if(distance > MOVE_ACCEPTABLE_WIDTH){
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("degree:[%4d] distance:[%4d] now_posi[%1d]\n",(int)round(degree),(int)round(distance),now_position);
+  }
+  
+  if(distance > (double)MOVE_ACCEPTABLE_WIDTH){
     switch(now_position){
     case NOW_POSITION_RIGHT:
+      right_adjust_value = 10.0;
       if(distance <= 50.0){
-	right_adjust_value = 2.0;
-      }else if(distance >= 400.0){
-	right_adjust_value = 16.0;
+      	right_adjust_value = 5.0;
+      }else if(distance >= 250.0){
+      	right_adjust_value = 25.0;
       }else{
-	right_adjust_value = distance / 25.0;
+      	right_adjust_value = distance / (10.0);
       }
       break;
     case NOW_POSITION_LEFT:
+      left_adjust_value = 10.0;
       if(distance <= 50.0){
-	left_adjust_value = 2.0;
-      }else if(distance*2.0 >= 400.0){
-	left_adjust_value = 16.0;
+      	left_adjust_value = 5.0;
+      }else if(distance*2.0 >= 250.0){
+      	left_adjust_value = 25.0;
       }else{
-	left_adjust_value = distance / 25.0;
+      	left_adjust_value = distance / (10.0);
       }
       break;
-    default:
-      break;
+    }
+    /* if(now_position == 0){ */
+    /*   right_adjust_value = distance; */
+    /*   left_adjust_value = 0.0; */
+    /* }else if(now_position == 1){ */
+    /*   right_adjust_value = 0.0; */
+    /*   left_adjust_value = distance; */
+    /* }else if(now_position == 2){ */
+    /*   right_adjust_value = 0.0; */
+    /*   left_adjust_value = 0.0; */
+    /* }else { */
+    /*   right_adjust_value = 0.0; */
+    /*   left_adjust_value = 20.0; */
+    /* } */
+    if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+      MW_printf("distance [out]\n");
     }
   }else{
     if(degree > 0.0){
-      right_adjust_value = degree*2.0;
+      right_adjust_value = degree*3.0;
     }else if(degree < 0.0){
-      left_adjust_value = fabs(degree*2.0);
+      left_adjust_value = fabs(degree*3.0);
+    }
+    if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+      MW_printf("distance [ in]\n");
     }
   }
 
-  if(fabs(right_adjust_value) > 16.0){
+  if(fabs(right_adjust_value) > 25.0){
     if(right_adjust_value > 0.0){
-      right_adjust_value = 16.0;
+      right_adjust_value = 25.0;
     }else{
-      right_adjust_value = -16.0;
+      right_adjust_value = -25.0;
     }
   }
-  if(fabs(left_adjust_value) > 16.0){
+  if(fabs(left_adjust_value) > 25.0){
     if(left_adjust_value > 0.0){
-      left_adjust_value = 16.0;
+      left_adjust_value = 25.0;
     }else{
-      left_adjust_value = -16.0;
+      left_adjust_value = -25.0;
     }
   }
 
@@ -888,7 +1080,7 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
 	break;
       }
       if(i==8){
-	duty = 0;
+	duty = 0.0;
       }
     }
     if(diff_from_target > 0){
@@ -932,10 +1124,10 @@ SteeringSituation_t steering_spin_to_target(int target,int target_motor){
     if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
       switch(j){
       case 0:
-	MW_printf("E1_degree[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
+	MW_printf("E1:degree[%3d] target[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)),target);
 	break;
       case 1:
-	MW_printf("E2_degree[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)));
+	MW_printf("E2:degree[%3d] target[%3d]\n",(int)round((double)encoder_degree*(double)(360.0/(double)encoder_ppr)),target);
 	break;
       }
     }
@@ -1187,35 +1379,40 @@ int odmetry_position(double position[3], int recet){
   }
   
   if(!matrix_init){
-    cal_matrix[0][0] = -0.05581555600218208963794;
-    cal_matrix[0][1] = -0.54530707169312928881104;
-    cal_matrix[0][2] =  0.05581555600218208963794;
-    cal_matrix[0][3] =  0.45469292830687071188951;
+    /* cal_matrix[0][0] = -0.05581555600218208963794; */
+    /* cal_matrix[0][1] = -0.54530707169312928881104; */
+    /* cal_matrix[0][2] =  0.05581555600218208963794; */
+    /* cal_matrix[0][3] =  0.45469292830687071188951; */
     
-    cal_matrix[1][0] = -0.50000000000000000000000;
-    cal_matrix[1][1] =  0.00000000000000000000000;
-    cal_matrix[1][2] = -0.00000000000000000000000;
-    cal_matrix[1][3] =  0.00000000000000000000000;
+    /* cal_matrix[1][0] = -0.50000000000000000000000; */
+    /* cal_matrix[1][1] =  0.00000000000000000000000; */
+    /* cal_matrix[1][2] = -0.00000000000000000000000; */
+    /* cal_matrix[1][3] =  0.00000000000000000000000; */
 
-    cal_matrix[2][0] =  0.30140400241178328404490;
-    cal_matrix[2][1] =  0.24465818714289815957966;
-    cal_matrix[2][2] = -0.30140400241178328404490;
-    cal_matrix[2][3] =  0.24465818714289815957966;
+    /* cal_matrix[2][0] =  0.30140400241178328404490; */
+    /* cal_matrix[2][1] =  0.24465818714289815957966; */
+    /* cal_matrix[2][2] = -0.30140400241178328404490; */
+    /* cal_matrix[2][3] =  0.24465818714289815957966; */
 
     /* cal_matrix[0][0] = -0.055815556002182089637945390335639840362915960837233; */
     /* cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796; */
     /* cal_matrix[0][2] =  0.055815556002182089637945390335639840362915960837233; */
     /* cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039; */
-    
-    /* cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000; */
-    /* cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000; */
-    /* cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000; */
-    /* cal_matrix[1][3] =  0.0000000000000000000000000000000000000000000000000; */
 
-    /* cal_matrix[2][0] =  0.3014040024117832840449051078124551379597461885211; */
-    /* cal_matrix[2][1] =  0.2446581871428981595796606276378879669241149616699; */
-    /* cal_matrix[2][2] = -0.3014040024117832840449051078124551379597461885211; */
-    /* cal_matrix[2][3] =  0.2446581871428981595796606276378879669241149616699; */
+    cal_matrix[0][0] = -0.0558155560021820896379453903356398403629159608372;
+    cal_matrix[0][1] = -0.5453070716931292888110482643773866605415027706796;
+    cal_matrix[0][2] =  0.0558155560021820896379453903356398403629159608372;
+    cal_matrix[0][3] =  0.4546929283068707118895173562261333945849722932039;
+    
+    cal_matrix[1][0] = -0.5000000000000000000000000000000000000000000000000;
+    cal_matrix[1][1] =  0.0000000000000000000000000000000000000000000000000;
+    cal_matrix[1][2] = -0.5000000000000000000000000000000000000000000000000;
+    cal_matrix[1][3] =  0.0000000000000000000000000000000000000000000000000;
+
+    cal_matrix[2][0] =  0.3014040024117832840449051078124551379597461885211;
+    cal_matrix[2][1] =  0.2446581871428981595796606276378879669241149616699;
+    cal_matrix[2][2] = -0.3014040024117832840449051078124551379597461885211;
+    cal_matrix[2][3] =  0.2446581871428981595796606276378879669241149616699;
 
     matrix_init = true;
   }
@@ -1264,6 +1461,10 @@ int odmetry_position(double position[3], int recet){
   }
   fill_array(position, return_position_val, 3);
 
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("now_position[x][y][w] : [%10d][%10d][%10d]\n",(int)position[0],(int)position[1],(int)(position[2]*100.0));
+  }
+  
   return 0;
 }
 
@@ -1271,7 +1472,7 @@ static
 NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VALUE], double get_y[MOVE_SAMPLE_VALUE], double get_zahyou_1[2], double get_zahyou_2[2], double *return_degree, double *return_distance){
   double x[MOVE_SAMPLE_VALUE],y[MOVE_SAMPLE_VALUE],temp_data[MOVE_SAMPLE_VALUE];
   double zahyou_1[2],zahyou_2[2],temp_zahyou;
-  NowPosition_t position;
+  static NowPosition_t position;
   double ave_x=0.0, ave_y=0.0, ave_xx=0.0, ave_xy=0.0;
   bool x_move_flag = false,y_move_flag = false;
   int i;
