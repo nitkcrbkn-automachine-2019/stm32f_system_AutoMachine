@@ -97,7 +97,7 @@ int appInit(void);
 /****以下追加分*****************/
 
 #define MOVE_SAMPLE_VALUE 20 //←のポジションデータで自己位置推定
-#define MOVE_ACCEPTABLE_WIDTH 20.0 //←*2の幅が移動時の許容
+#define MOVE_ACCEPTABLE_WIDTH 5.0 //←*2の幅が移動時の許容
 
 typedef enum{
   GET_ENCODER_VALUE = 0,
@@ -126,6 +126,7 @@ typedef enum{
   ARRIVED_TARGET = 3,
   SPIN_STEERING = 4,
   SPIN_END = 5,
+  OVER_SHOOT = 6,
 }MovingSituation_t;
 
 typedef enum{

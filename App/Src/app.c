@@ -15,7 +15,7 @@
 /********/
 
 static
-int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation);
+int I2C_Encoder(int encoder_num, EncoderOperation_t operation);
 
 
 /********/
@@ -367,13 +367,16 @@ int appTask(void){
 static
 MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double max_duty, bool acceleration, bool robo_destination){
   static SteeringSituation_t steering_situation[2];
-  MovingSituation_t situation;
+  static MovingSituation_t situation;
+  static MovingSituation_t over_shoot_situation;
   static MovingDestination_t mode;
+  static over_shoot_mode;
   double straight_duty,right_duty_adjust,left_duty_adjust,right_duty,left_duty;
   static double recent_zahyou_1[2]={},recent_zahyou_2[2]={};
   static double position[MOVE_SAMPLE_VALUE][3] = {};
   static first_flag = false;
-
+  static bool over_shoot = false;
+  
   if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
     first_flag = true;
     recent_zahyou_1[0] = zahyou_1[0];
@@ -438,10 +441,6 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
     }
     situation = SPIN_STEERING;
   }else{
-    odmetry_position_recent(position, 0);
-    situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
-    decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
-
     switch(mode){
     case PLUS_Y:
       steering_spin_to_target(-1+R_F_DEG_ADJUST,1);
@@ -461,12 +460,105 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       break;
     }
     
+    odmetry_position_recent(position, 0);
     if(situation == ARRIVED_TARGET){
-      g_md_h[R_F_KUDO_MD].duty = 0;
-      g_md_h[L_B_KUDO_MD].duty = 0;
-      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
-      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+      
+      switch(mode){
+      case PLUS_Y:
+	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){
+	  over_shoot = true;
+	  over_shoot_mode = MINUS_Y;
+	}
+	break;
+      case MINUS_Y:
+	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){
+	  over_shoot = true;
+	  over_shoot_mode = PLUS_Y;
+	}
+	break;
+      case PLUS_X:
+	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){
+	  over_shoot = true;
+	  over_shoot_mode = MINUS_X;
+	}
+	break;
+      case MINUS_X:
+	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){
+	  over_shoot = true;
+	  over_shoot_mode = PLUS_X;
+	}
+	break;
+      }
+      
+      if(over_shoot){
+
+	straight_duty = SUS_LOW_DUTY;
+	/* //over_shoot_situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, true, over_shoot_mode); */
+	/* //decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, over_shoot_mode); */
+	
+	right_duty = straight_duty; //+ right_duty_adjust;
+	left_duty = straight_duty; //+ left_duty_adjust;
+	if(right_duty < 0.0) right_duty = 0.0;
+	if(left_duty < 0.0) left_duty = 0.0;
+	if(right_duty > 9999.0) right_duty = 9999.0;
+	if(left_duty > 9999.0) left_duty = 9999.0;
+
+	switch(over_shoot_mode){
+	case PLUS_Y:
+	case MINUS_X:
+	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	  g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+	  g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+	  break;
+	case PLUS_X:
+	case MINUS_Y:
+	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	  g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+	  g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+	}
+
+	switch(over_shoot_mode){
+	case PLUS_Y:
+	case MINUS_Y:
+	  if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){
+	    over_shoot_situation = OVER_SHOOT;
+	  }else{
+	    over_shoot_situation = ARRIVED_TARGET;
+	  }
+	  break;
+	case PLUS_X:
+	case MINUS_X:
+	  if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){
+	    over_shoot_situation = OVER_SHOOT;
+	  }else{
+	    over_shoot_situation = ARRIVED_TARGET;
+	  }
+	  break;
+	}
+	
+	if(over_shoot_situation == ARRIVED_TARGET){
+	  situation = ARRIVED_TARGET;
+	  over_shoot = false;
+	  g_md_h[R_F_KUDO_MD].duty = 0;
+	  g_md_h[L_B_KUDO_MD].duty = 0;
+	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+	}else{
+	  over_shoot_situation = OVER_SHOOT;
+	  return over_shoot_situation;
+	}
+      }else{
+	g_md_h[R_F_KUDO_MD].duty = 0;
+	g_md_h[L_B_KUDO_MD].duty = 0;
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+      }
     }else{
+      situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
+      decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
+      
       /* if((right_duty_adjust==0.0 || left_duty_adjust==0.0) && (right_duty_adjust!=0.0 || left_duty_adjust!=0.0)){ */
       /* 	if(right_duty_adjust==0.0){ */
       /* 	  right_duty = 0.0; */
@@ -476,12 +568,12 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       /* 	  left_duty = 0.0; */
       /* 	} */
       /* }else{ */
-	right_duty = straight_duty + right_duty_adjust;
-	left_duty = straight_duty + left_duty_adjust;
-	if(right_duty < 0.0) right_duty = 0.0;
-	if(left_duty < 0.0) left_duty = 0.0;
-	if(right_duty > 9999.0) right_duty = 9999.0;
-	if(left_duty > 9999.0) left_duty = 9999.0;
+      right_duty = straight_duty + right_duty_adjust;
+      left_duty = straight_duty + left_duty_adjust;
+      if(right_duty < 0.0) right_duty = 0.0;
+      if(left_duty < 0.0) left_duty = 0.0;
+      if(right_duty > 9999.0) right_duty = 9999.0;
+      if(left_duty > 9999.0) left_duty = 9999.0;
 	/* } */
       switch(mode){
       case PLUS_Y:
@@ -525,6 +617,10 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       /* 	MW_printf("right_duty[%4d]",(int)right_duty); */
       /* 	MW_printf("left_duty[%4d]",(int)left_duty); */
       /* } */
+      if(situation == ARRIVED_TARGET){
+	over_shoot_situation = OVER_SHOOT;
+	return over_shoot_situation;
+      }
     }
   }
   
@@ -541,6 +637,7 @@ MovingSituation_t go_to_target_2(double zahyou_1[2], double zahyou_2[2], double 
   static double position[MOVE_SAMPLE_VALUE][3] = {};
   static first_flag = false;
   static int deg_adjust_temp;
+  static bool over_shoot = false;
   
   if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
     first_flag = true;
@@ -724,7 +821,7 @@ MovingSituation_t decide_straight_duty(double *return_duty, double zahyou_1[2], 
       if(*return_duty > max_duty) *return_duty = max_duty;
       situation = MINUS_ACCELERATING;
     }
-    if(distance_to_target <= 10.0){ //5mmくらい進むkana
+    if(distance_to_target <= 5.0){ //5mmくらい進むkana
       *return_duty = 0.0;
       situation = ARRIVED_TARGET;
     }
@@ -1626,7 +1723,7 @@ NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VAL
 
 
 static
-int32_t I2C_Encoder(int32_t encoder_num, EncoderOperation_t operation){
+int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
   int32_t value=0,temp_value=0,diff=0;
   static int32_t adjust[4] = {0,0,0,0};
   static int32_t recent_value[4] = {0,0,0,0};
