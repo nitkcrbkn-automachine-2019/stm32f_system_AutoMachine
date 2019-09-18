@@ -48,6 +48,8 @@ static
 FirstUpMecha_t first_up_mecha_move(FirstUpMecha_t mode);
 static
 void fill_array(double array1[], double array2[], int size);
+static
+LineTrace_State_t find_robotdirection(uint8_t *front, uint8_t *behind, Robot_Direction_t *robot_direction, int reset, Direction_t reset_direction);
 
 static char *testmode_name[] = {
   "MANUAL_SUSPENSION",
@@ -1927,4 +1929,198 @@ void fill_array(double array1[], double array2[], int size){
   for(i=0;i<size;i++){
     array1[i] = array2[i];
   }
+}
+
+static
+LineTrace_State_t find_robotdirection(uint8_t *front, uint8_t *behind, Robot_Direction_t *robot_direction, int reset, Direction_t reset_direction){
+  //LED側
+  // 
+  //   16    15    14    13    12    11    10    9     8     7     6     5     4     3     2     1
+  //   o     o     o     o     o     o     o     o     o     o     o     o     o     o     o     o  
+  //^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^
+  //33 32 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  8  7  6  5  4  3  2  1 
+
+  static Robot_Direction_t recent_direction = {
+    .direction = NO_LINE,
+    .gap_degree = 0,
+  };
+  LineTrace_State_t state;
+  Direction_t front_direction;
+  Direction_t behind_direction;
+  uint16_t front_decimal = 0;
+  uint16_t behind_decimal = 0;
+  int front_binary[16];
+  int behind_binary_reverse[16];
+  int behind_binary[16];
+  int front_right_on = 0,front_left_on = 0,front_middle = 0;
+  int behind_right_on = 0,behind_left_on = 0,behind_middle = 0;
+  static int recent_front_middle = 0,recent_behind_middle = 0;
+  static bool first_flag = true;
+  int i;
+
+  if(reset==1){
+    recent_direction.direction = NO_LINE;
+    recent_direction.gap_degree = 0;
+    state = RESET_DATA;
+    first_flag = true;
+    return state; 
+  }
+
+  if(first_flag){
+    if(reset_direction == D_MIDDLE){
+      recent_front_middle = 17;
+      recent_behind_middle = 17;
+    }else if(reset_direction == D_RIGHT){
+      recent_front_middle = 33;
+      recent_behind_middle = 33;
+    }else if(reset_direction == D_LEFT){
+      recent_front_middle = 1;
+      recent_behind_middle = 1;
+    }
+    first_flag = false;
+  }
+  
+  front_decimal = (uint16_t)((*front) << 8) + (uint8_t)(*(front+1));
+  change_binary(front_decimal,front_binary);
+  
+  for(i=0;i<16;i++){
+    if(front_binary[i] == 1){
+      front_right_on = i+1;
+      break;
+    }
+  }
+  
+  for(i=15;i>=0;i--){
+    if(front_binary[i] == 1){
+      front_left_on = i+1;
+      break;
+    }
+  }
+
+  front_middle = ((front_left_on*2)-(front_right_on*2))/2 + front_right_on*2;
+
+  behind_decimal = (uint16_t)((*behind) << 8) + (uint8_t)(*(behind+1));
+  change_binary(behind_decimal,behind_binary_reverse);
+
+  for(i=0;i<16;i++){
+    behind_binary[i] = behind_binary_reverse[15-i];
+  }
+  
+  for(i=0;i<16;i++){
+    if(behind_binary[i] == 1){
+      behind_right_on = i+1;
+      break;
+    }
+  }
+  
+  for(i=15;i>=0;i--){
+    if(behind_binary[i] == 1){
+      behind_left_on = i+1;
+      break;
+    }
+  }
+
+  behind_middle = ((behind_left_on*2)-(behind_right_on*2))/2 + behind_right_on*2;
+
+  if(front_decimal == 0 && behind_decimal == 0){
+    if(recent_direction.direction == NO_LINE){
+      robot_direction->direction = NO_LINE;
+      robot_direction->gap_degree = 0;
+    }else{
+      robot_direction->direction = recent_direction.direction;
+      robot_direction->gap_degree = recent_direction.gap_degree;
+    }
+    state = RECENT_DATA;
+    return state;
+    
+  }else if(front_decimal == 0){
+    if(recent_front_middle > 31){
+      front_middle = 39;
+    }else if(recent_front_middle < 3){
+      front_middle = -5;
+    }else{
+      front_middle = recent_front_middle;
+    }
+    state = CURRENT_DATA;
+  }else if(behind_decimal == 0){
+    if(recent_behind_middle > 31){
+      behind_middle = 39;
+    }else if(recent_behind_middle < 3){
+      behind_middle = -5;
+    }else{
+      behind_middle = recent_behind_middle;
+    }
+    state = CURRENT_DATA;
+  }
+  
+  if(front_middle < 17){
+    front_direction = D_RIGHT;
+  }else if(front_middle > 17){
+    front_direction = D_LEFT;
+  }else{
+    front_direction = D_MIDDLE;
+  }
+
+  if(behind_middle < 17){
+    behind_direction = D_RIGHT;
+  }else if(behind_middle > 17){
+    behind_direction = D_LEFT;
+  }else{
+    behind_direction = D_MIDDLE;
+  }
+
+  if(front_direction == D_MIDDLE && behind_direction == D_MIDDLE){
+    robot_direction->direction = D_MIDDLE;
+    robot_direction->gap_degree = 0;
+  }else if(front_direction == D_RIGHT && behind_direction == D_RIGHT){
+    robot_direction->direction = D_LEFT;
+    if(abs(front_middle-17) > abs(behind_middle-17)){
+      robot_direction->gap_degree = abs(front_middle-17);
+    }else{
+      robot_direction->gap_degree = abs(behind_middle-17);
+    }
+  }else if(front_direction == D_LEFT && behind_direction == D_LEFT){
+    robot_direction->direction = D_RIGHT;
+    if(abs(front_middle-17) > abs(behind_middle-17)){
+      robot_direction->gap_degree = abs(front_middle-17);
+    }else{
+      robot_direction->gap_degree = abs(behind_middle-17);
+    }
+  }else if((front_direction == D_RIGHT && behind_direction == D_LEFT)|| (front_direction == D_MIDDLE && behind_direction == D_LEFT) || (front_direction == D_RIGHT && behind_direction == D_MIDDLE) ){
+    robot_direction->direction = D_FRONT_LEFT;
+    robot_direction->gap_degree = abs(front_middle - behind_middle);
+  }else if((front_direction == D_LEFT && behind_direction == D_RIGHT) || (front_direction == D_MIDDLE && behind_direction == D_RIGHT) || (front_direction == D_LEFT && behind_direction == D_MIDDLE)){
+    robot_direction->direction = D_FRONT_RIGHT;
+    robot_direction->gap_degree = abs(front_middle - behind_middle);
+  }
+
+  recent_front_middle = front_middle;
+  recent_behind_middle = behind_middle;
+  recent_direction.direction = robot_direction->direction;
+  recent_direction.gap_degree = robot_direction->gap_degree;
+
+  state = CURRENT_DATA;
+  return state;
+  
+  /* for(i=15;i>=0;i--){ */
+  /*   printf("%2d",front_binary[i]); */
+  /* } */
+  /* printf("\n"); */
+  /* for(i=0;i<33-front_middle;i++){ */
+  /*   printf(" "); */
+  /* } */
+  /* printf("^\n"); */
+
+  /* for(i=15;i>=0;i--){ */
+  /*   printf("%2d",behind_binary[i]); */
+  /* } */
+  /* printf("\n"); */
+  /* for(i=0;i<33-behind_middle;i++){ */
+  /*   printf(" "); */
+  /* } */
+  /* printf("^\n"); */
+
+  /* printf("\n%d",front_right_on); */
+  /* printf("\n%d",front_left_on); */
+  /* printf("\n%d",front_middle); */
 }

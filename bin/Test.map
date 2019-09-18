@@ -9274,7 +9274,7 @@ Discarded input sections
                 0x0000000000000000       0x3c obj/DD_Gene.o
  .rodata.DD_I2C1Receive.str1.4
                 0x0000000000000000       0x37 obj/DD_Gene.o
- .rodata.__FUNCTION__.8063
+ .rodata.__FUNCTION__.8080
                 0x0000000000000000        0xf obj/DD_Gene.o
  .debug_macro   0x0000000000000000      0xab4 obj/DD_Gene.o
  .debug_macro   0x0000000000000000       0x22 obj/DD_Gene.o
@@ -10034,7 +10034,7 @@ Discarded input sections
                 0x0000000000000000       0x1c obj/DD_SV.o
  .rodata.SV_print.str1.4
                 0x0000000000000000        0xc obj/DD_SV.o
- .rodata.__FUNCTION__.8033
+ .rodata.__FUNCTION__.8050
                 0x0000000000000000        0xa obj/DD_SV.o
  .debug_info    0x0000000000000000      0xf74 obj/DD_SV.o
  .debug_abbrev  0x0000000000000000      0x2b3 obj/DD_SV.o
@@ -11349,14 +11349,14 @@ LOAD /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7
  *fill*         0x000000000800a429        0x3 
  .rodata.DD_initialize.str1.4
                 0x000000000800a42c       0x40 obj/DD_Gene.o
- .rodata.__FUNCTION__.8049
+ .rodata.__FUNCTION__.8066
                 0x000000000800a46c        0xc obj/DD_Gene.o
- .rodata.__FUNCTION__.8056
+ .rodata.__FUNCTION__.8073
                 0x000000000800a478        0xc obj/DD_Gene.o
- .rodata.__FUNCTION__.8070
+ .rodata.__FUNCTION__.8087
                 0x000000000800a484        0xf obj/DD_Gene.o
  *fill*         0x000000000800a493        0x1 
- .rodata.__FUNCTION__.8109
+ .rodata.__FUNCTION__.8126
                 0x000000000800a494        0xe obj/DD_Gene.o
  *fill*         0x000000000800a4a2        0x2 
  .rodata.DD_LDHandPrint.str1.4
@@ -11373,7 +11373,7 @@ LOAD /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7
                 0x000000000800a658       0x17 obj/DD_MD.o
                                          0x1c (size before relaxing)
  *fill*         0x000000000800a66f        0x1 
- .rodata.__FUNCTION__.8013
+ .rodata.__FUNCTION__.8030
                 0x000000000800a670        0xb obj/DD_MD.o
  *fill*         0x000000000800a67b        0x1 
  .rodata.DD_RCInit.str1.4
@@ -11398,15 +11398,15 @@ LOAD /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7
  .rodata.SY_init.str1.4
                 0x000000000800a78c       0x75 obj/SystemTaskManager.o
  *fill*         0x000000000800a801        0x3 
- .rodata.__FUNCTION__.8148
+ .rodata.__FUNCTION__.8165
                 0x000000000800a804        0x5 obj/SystemTaskManager.o
  *fill*         0x000000000800a809        0x3 
- .rodata.__FUNCTION__.8197
+ .rodata.__FUNCTION__.8214
                 0x000000000800a80c        0x8 obj/SystemTaskManager.o
- .rodata.__FUNCTION__.8222
+ .rodata.__FUNCTION__.8239
                 0x000000000800a814        0xd obj/SystemTaskManager.o
  *fill*         0x000000000800a821        0x3 
- .rodata.__FUNCTION__.8233
+ .rodata.__FUNCTION__.8250
                 0x000000000800a824       0x18 obj/SystemTaskManager.o
  .rodata.main.str1.4
                 0x000000000800a83c       0x7d obj/SystemTaskManager.o
@@ -11472,18 +11472,18 @@ LOAD /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7
                 0x0000000020000000                _sdata = .
  *(.data)
  *(.data*)
- .data.c_up_flag.8962
+ .data.c_up_flag.8985
                 0x0000000020000000        0x1 obj/app.o
  *fill*         0x0000000020000001        0x3 
- .data.color_num.8961
+ .data.color_num.8984
                 0x0000000020000004        0x4 obj/app.o
- .data.first_flag.8838
+ .data.first_flag.8861
                 0x0000000020000008        0x1 obj/app.o
- .data.first_flag.9100
+ .data.first_flag.9123
                 0x0000000020000009        0x1 obj/app.o
- .data.now_mode.8700
+ .data.now_mode.8723
                 0x000000002000000a        0x1 obj/app.o
- .data.now_moving_situation.8715
+ .data.now_moving_situation.8738
                 0x000000002000000b        0x1 obj/app.o
  .data.editlist
                 0x000000002000000c       0x24 obj/constManager.o
@@ -11551,74 +11551,74 @@ LOAD /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7
  *(.bss)
  .bss           0x00000000200002f0       0x1c /usr/local/Cellar/gcc-arm-none-eabi/20180627/bin/../lib/gcc/arm-none-eabi/7.3.1/thumb/v7-m/crtbegin.o
  *(.bss*)
- .bss.adjust.9095
+ .bss.adjust.9118
                 0x000000002000030c       0x10 obj/app.o
  *fill*         0x000000002000031c        0x4 
- .bss.cal_matrix.9013
+ .bss.cal_matrix.9036
                 0x0000000020000320       0x60 obj/app.o
- .bss.circle_flag.8701
+ .bss.circle_flag.8724
                 0x0000000020000380        0x1 obj/app.o
- .bss.encoder1_reset.8696
+ .bss.encoder1_reset.8719
                 0x0000000020000381        0x1 obj/app.o
- .bss.encoder2_reset.8697
+ .bss.encoder2_reset.8720
                 0x0000000020000382        0x1 obj/app.o
  *fill*         0x0000000020000383        0x5 
- .bss.first_distance.8837
+ .bss.first_distance.8860
                 0x0000000020000388        0x8 obj/app.o
- .bss.first_flag.8770
+ .bss.first_flag.8793
                 0x0000000020000390        0x1 obj/app.o
- .bss.left_flag.8708
+ .bss.left_flag.8731
                 0x0000000020000391        0x1 obj/app.o
- .bss.matrix_init.9010
+ .bss.matrix_init.9033
                 0x0000000020000392        0x1 obj/app.o
  *fill*         0x0000000020000393        0x1 
- .bss.message_count.9099
+ .bss.message_count.9122
                 0x0000000020000394        0x4 obj/app.o
- .bss.mode.8760
+ .bss.mode.8783
                 0x0000000020000398        0x1 obj/app.o
  *fill*         0x0000000020000399        0x3 
- .bss.motor_set.8921
+ .bss.motor_set.8944
                 0x000000002000039c        0x2 obj/app.o
  *fill*         0x000000002000039e        0x2 
- .bss.moving_count.8718
+ .bss.moving_count.8741
                 0x00000000200003a0        0x4 obj/app.o
- .bss.mun_sus_recent_target.8695
+ .bss.mun_sus_recent_target.8718
                 0x00000000200003a4        0x4 obj/app.o
- .bss.position.8698
+ .bss.position.8721
                 0x00000000200003a8       0x18 obj/app.o
- .bss.position.8769
+ .bss.position.8792
                 0x00000000200003c0      0x1e0 obj/app.o
- .bss.position.9052
+ .bss.position.9075
                 0x00000000200005a0        0x1 obj/app.o
  *fill*         0x00000000200005a1        0x7 
- .bss.recent_position.8699
+ .bss.recent_position.8722
                 0x00000000200005a8      0x1e0 obj/app.o
- .bss.recent_position.9014
+ .bss.recent_position.9037
                 0x0000000020000788       0x18 obj/app.o
- .bss.recent_system_ms.9101
+ .bss.recent_system_ms.9124
                 0x00000000200007a0        0x4 obj/app.o
- .bss.recent_value.9096
+ .bss.recent_value.9119
                 0x00000000200007a4       0x20 obj/app.o
  *fill*         0x00000000200007c4        0x4 
- .bss.recent_zahyou_1.8767
+ .bss.recent_zahyou_1.8790
                 0x00000000200007c8       0x10 obj/app.o
- .bss.recent_zahyou_1.8835
+ .bss.recent_zahyou_1.8858
                 0x00000000200007d8       0x10 obj/app.o
- .bss.recent_zahyou_2.8768
+ .bss.recent_zahyou_2.8791
                 0x00000000200007e8       0x10 obj/app.o
- .bss.recent_zahyou_2.8836
+ .bss.recent_zahyou_2.8859
                 0x00000000200007f8       0x10 obj/app.o
- .bss.right_flag.8707
+ .bss.right_flag.8730
                 0x0000000020000808        0x1 obj/app.o
  *fill*         0x0000000020000809        0x3 
- .bss.steering_situation.8757
+ .bss.steering_situation.8780
                 0x000000002000080c        0x2 obj/app.o
  *fill*         0x000000002000080e        0x2 
- .bss.target_zahyou_1.8713
+ .bss.target_zahyou_1.8736
                 0x0000000020000810       0x10 obj/app.o
- .bss.target_zahyou_2.8714
+ .bss.target_zahyou_2.8737
                 0x0000000020000820       0x10 obj/app.o
- .bss.test_flag.8693
+ .bss.test_flag.8716
                 0x0000000020000830        0x1 obj/app.o
  *fill*         0x0000000020000831        0x3 
  .bss.g_adjust  0x0000000020000834      0x144 obj/constManager.o

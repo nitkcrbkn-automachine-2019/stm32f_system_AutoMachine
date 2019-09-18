@@ -147,6 +147,26 @@ typedef enum{
   FIRST_UP_MECHA_STOP = 2,
 }FirstUpMecha_t;
 
+typedef enum{
+  D_RIGHT=0,
+  D_LEFT=1,
+  D_FRONT_RIGHT=2,
+  D_FRONT_LEFT=3,
+  D_MIDDLE = 4,
+  NO_LINE = 5,
+}Direction_t;
+
+typedef struct{
+  uint8_t gap_degree;
+  Direction_t direction;
+}Robot_Direction_t;
+
+typedef enum{
+  RECENT_DATA =0,
+  CURRENT_DATA=1,
+  RESET_DATA  = 2,
+}LineTrace_State_t;
+
 #endif
 
 
