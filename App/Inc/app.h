@@ -7,7 +7,7 @@
 int appTask(void);
 int appInit(void);
 
-#define DD_NUM_OF_MD 6
+#define DD_NUM_OF_MD 7
 #define DD_NUM_OF_AB 1
 
 #define DD_NUM_OF_LD 1
@@ -40,6 +40,8 @@ int appInit(void);
 #define LEFT_ENC 2
 #define FRONT_ENC 3
 
+#define ZENEBA_MD 6
+
 #define R_F_KUDO_MD 2
 #define L_B_KUDO_MD 3
 #define CENTRAL_THRESHOLD 4
@@ -53,8 +55,8 @@ int appInit(void);
 #define R_F_DEG_INIT_LOW_DUTY 900.0
 #define L_B_DEG_INIT_LOW_DUTY 900.0
 
-#define R_F_DEG_LOW_DUTY 900.0
-#define L_B_DEG_LOW_DUTY 850.0
+#define R_F_DEG_LOW_DUTY 950.0
+#define L_B_DEG_LOW_DUTY 900.0
 
 #define R_F_DEG_DUTY_ADJUST 0.92
 #define L_B_DEG_DUTY_ADJUST 1.0
@@ -62,23 +64,26 @@ int appInit(void);
 #define R_F_DEG_ADJUST 180
 #define L_B_DEG_ADJUST 175
 
-#define ARM_UP_MAXDUTY (5000*VOLTAGE_ADJUST)
-#define ARM_SPIN_MAXDUTY (3000*VOLTAGE_ADJUST) //gyaku
+#define ARM_UP_MAXDUTY 5000
+#define ARM_SPIN_MAXDUTY 3000 //gyaku
+#define ZENEBA_MAXDUTY 2500
 
 #define STRAIGHT_MAX_DUTY 8000
 
-#define SUS_LOW_DUTY 1600.0
+#define SUS_LOW_DUTY 1950.0
 
 #define ARM_UP_MD 4
 #define ARM_SPIN_MD 5 
 
 #define AB_UPMECHA_ON (1<<3) //0b00001000
-#define AB_CENTER_ON (1<<4)  //0b00010000
-#define AB_SIDE_ON (1<<5)    //0b00100000
+#define AB_CENTER_ON (1<<2) //0b00000100
+#define AB_LEFT_ON (1<<4)  //0b00010000
+#define AB_RIGHT_ON (1<<5)    //0b00100000
 
 #define AB_UPMECHA_OFF (0b11110111)
-#define AB_CENTER_OFF (0b11101111)
-#define AB_SIDE_OFF (0b11011111)
+#define AB_CENTER_OFF  (0b11111011)
+#define AB_LEFT_OFF    (0b11101111)
+#define AB_RIGHT_OFF   (0b11011111)
 
 #define MD_GAIN ( DD_MD_MAX_DUTY / DD_RC_ANALOG_MAX )
 

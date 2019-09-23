@@ -39,7 +39,7 @@ int steering_2_init(void);
 static
 int get_diff(int target,int now_degree,int encoder_ppr);
 static
-int odmetry_position(double position[3], int recet);
+int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3]);
 static
 int odmetry_position_recent(double position[MOVE_SAMPLE_VALUE][3], int recet);
 static
@@ -50,6 +50,7 @@ static
 void fill_array(double array1[], double array2[], int size);
 static
 LineTrace_State_t find_robotdirection(uint8_t *front, uint8_t *behind, Robot_Direction_t *robot_direction, int reset, Direction_t reset_direction);
+//linetrace_state = find_robotdirection(g_ss_h[PHOTOARRAY_FRONT].data,g_ss_h[PHOTOARRAY_BEHIND].data,&robot_direction,1,NO_LINE);
 
 static char *testmode_name[] = {
   "MANUAL_SUSPENSION",
@@ -71,6 +72,8 @@ static char *moving_situation_name[] = {
 /*suspensionSystem*/
 static
 int all_motor_stop(void);
+static
+int sus_motor_stop(void);
 static
 int suspensionSystem(void);
 /*ABSystem*/
@@ -122,6 +125,12 @@ int appTask(void){
   int right_degree,left_degree;
 
   static moving_count = 0;
+
+  bool odmetry_func[3];
+  double odmetry_func_data[3];
+
+  static int destination_adjust_timecount = 0;
+  static bool next_motion_recet_flag = true;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -168,12 +177,24 @@ int appTask(void){
   case STOP_EVERYTHING:
     all_motor_stop();
     break;//////////////////////////////////////////////////////
-  case AUTO_TEST:///////////////////////////////////////////////
+  case AUTO_TEST:///////////////////////////////////////////////////////////////////////////////////////////////////////
+    /* This is BLUE ZONE pro */
+
+    if(__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_L1(g_rc_data)){
+      I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE);
+      I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE);
+      I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE);
+      I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE);
+      ret = odmetry_position(position,1,false,odmetry_func,position);
+      ret = odmetry_position_recent(recent_position,1);
+    }
     if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){
       test_flag = true;
     }
     if(__RC_ISPRESSED_CROSS(g_rc_data)){
+      destination_adjust_timecount = 0;
       test_flag = false;
+      next_motion_recet_flag = true;
     }
     if(!test_flag){
       all_motor_stop();
@@ -181,81 +202,166 @@ int appTask(void){
     }else{
       switch(moving_count){
       case 0:
-	target_zahyou_1[0] = 0.0;
-	target_zahyou_1[1] = 0.0;
-	target_zahyou_2[0] = 0.0;
-	target_zahyou_2[1] = 5700.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_GREEN;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = 0.0;
+	  target_zahyou_1[1] = 0.0;
+	  target_zahyou_2[0] = 0.0;
+	  target_zahyou_2[1] = 5700.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_GREEN;
+	  }
+	  next_motion_recet_flag = false;
 	}
+        
 	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4500.0, true, true);
 	if(now_moving_situation == ARRIVED_TARGET){
+	  next_motion_recet_flag = true;
 	  moving_count++;
 	}
 	break;
       case 1:
-	g_ab_h[0].dat |= AB_UPMECHA_ON;
-      	target_zahyou_1[0] = 0.0;
-      	target_zahyou_1[1] = 5700.0;
-      	target_zahyou_2[0] = -1650.0;
-      	target_zahyou_2[1] = 5700.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_BLUE;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = 0.0;
+	  target_zahyou_1[1] = position[1];//5700.0;
+	  target_zahyou_2[0] = 2000.0;
+	  target_zahyou_2[1] = position[1];//5700.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_RED;
+	  }
+	  next_motion_recet_flag = false;
 	}
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
-      	if(now_moving_situation == ARRIVED_TARGET){
-      	  moving_count++;
-      	}
-      	break;
+
+	destination_adjust_timecount++;
+	if(destination_adjust_timecount < 150){
+	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
+	  /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
+	  /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
+	  /* g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD; */
+	  /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
+	  /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
+	  /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
+	}else if(destination_adjust_timecount < 250){
+	  steering_spin_to_target(120+R_F_DEG_ADJUST,1);
+	  steering_spin_to_target(120+L_B_DEG_ADJUST,2);
+	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	  g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
+	  g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
+	}else if(destination_adjust_timecount < 350){
+	  steering_spin_to_target(60+R_F_DEG_ADJUST,1);
+	  steering_spin_to_target(60+L_B_DEG_ADJUST,2);
+	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	  g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
+	  g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
+	}
+
+	if(destination_adjust_timecount >= 350){
+	  now_moving_situation = SPIN_STEERING;
+	  destination_adjust_timecount = 0;
+	  sus_motor_stop();
+	  odmetry_func[0] = true;
+	  odmetry_func[1] = false;
+	  odmetry_func[2] = true;
+	  odmetry_func_data[0] = 200.0;
+	  odmetry_func_data[1] = 5700.0;
+	  odmetry_func_data[2] = 0.0;
+	  odmetry_position(position,0,true,odmetry_func,odmetry_func_data);
+	  next_motion_recet_flag = true;
+	  moving_count++;
+	}
+	break;
       case 2:
-      	target_zahyou_1[0] = -1650.0;
-      	target_zahyou_1[1] = 5700.0;
-      	target_zahyou_2[0] = -1650.0;
-      	target_zahyou_2[1] = 6200.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_YELLOW;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  g_ab_h[0].dat |= AB_UPMECHA_ON;
+	  target_zahyou_1[0] = 230.0;
+	  target_zahyou_1[1] = position[1];//5700.0;
+	  target_zahyou_2[0] = -1750.0;
+	  target_zahyou_2[1] = position[1];//5700.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
+	  }
+	  next_motion_recet_flag = false;
 	}
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
-      	  moving_count++;
+	  next_motion_recet_flag = true;
+	  moving_count++;
       	}
       	break;
       case 3:
-      	target_zahyou_1[0] = -1650.0;
-      	target_zahyou_1[1] = 6200.0;
-      	target_zahyou_2[0] = -1650.0;
-      	target_zahyou_2[1] = 6000.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_PURPLE;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = position[0];//-1650.0;
+	  target_zahyou_1[1] = 5700.0;
+	  target_zahyou_2[0] = position[0];//-1650.0;
+	  target_zahyou_2[1] = 6200.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
+	  }
+	  next_motion_recet_flag = false;
 	}
       	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
+	  next_motion_recet_flag = true;
       	  moving_count++;
       	}
       	break;
       case 4:
-      	target_zahyou_1[0] = -1650.0;
-      	target_zahyou_1[1] = 6000.0;
-      	target_zahyou_2[0] = -1650.0;
-      	target_zahyou_2[1] = 6100.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = position[0];//-1650.0;
+	  target_zahyou_1[1] = 6200.0;
+	  target_zahyou_2[0] = position[0];//-1650.0;
+	  target_zahyou_2[1] = 5700.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
+	  }
+	  next_motion_recet_flag = false;
 	}
       	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
+	  next_motion_recet_flag = true;
       	  moving_count++;
       	}
       	break;
       case 5:
-      	target_zahyou_1[0] = -1650.0;
-      	target_zahyou_1[1] = 6100.0;
-      	target_zahyou_2[0] = -3450.0;
-      	target_zahyou_2[1] = 6100.0;
-	for(i=0; i<8; i++){
-	  g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = position[0];//-1650.0;
+	  target_zahyou_1[1] = 5700.0;
+	  target_zahyou_2[0] = position[0];//-1650.0;
+	  target_zahyou_2[1] = 6100.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
+	  }
+	  next_motion_recet_flag = false;
 	}
       	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
+	  next_motion_recet_flag = true;
+      	  moving_count++;
+      	}
+      	break;
+      case 6:
+	if(next_motion_recet_flag){
+	  odmetry_position(position,0,false,odmetry_func,position);
+	  target_zahyou_1[0] = -1750.0;
+	  target_zahyou_1[1] = position[1];//6100.0;
+	  target_zahyou_2[0] = -3450.0;
+	  target_zahyou_2[1] = position[1];//6100.0;
+	  for(i=0; i<8; i++){
+	    g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+	  }
+	  next_motion_recet_flag = false;
+	}
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	if(now_moving_situation == ARRIVED_TARGET){
+	  next_motion_recet_flag = true;
       	  moving_count++;
       	}
       	break;
@@ -263,7 +369,7 @@ int appTask(void){
       //now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
       //now_moving_situation = go_to_target_2(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
     }
-    break;//////////////////////////////////////////////////////
+    break;/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   case MANUAL_SUSPENSION:
 
     if(sqrt(abs(DD_RCGetRX(g_rc_data))*abs(DD_RCGetRX(g_rc_data))+abs(DD_RCGetRY(g_rc_data))*abs(DD_RCGetRY(g_rc_data))) < sqrt(45*45)){
@@ -305,7 +411,10 @@ int appTask(void){
       return ret;
     }
 
-    if(__RC_ISPRESSED_R1(g_rc_data)){//SPIN_M
+    if(__RC_ISPRESSED_R1(g_rc_data) && __RC_ISPRESSED_R2(g_rc_data)){
+      g_md_h[ARM_SPIN_MD].mode = D_MMOD_BRAKE;
+      g_md_h[ARM_SPIN_MD].duty = 0;
+    }else if(__RC_ISPRESSED_R1(g_rc_data)){//SPIN_M
       g_md_h[ARM_SPIN_MD].mode = D_MMOD_FORWARD;
       g_md_h[ARM_SPIN_MD].duty = ARM_SPIN_MAXDUTY;
     }else if(__RC_ISPRESSED_R2(g_rc_data)){
@@ -316,14 +425,41 @@ int appTask(void){
       g_md_h[ARM_SPIN_MD].duty = 0;
     }
 
-    if(__RC_ISPRESSED_L1(g_rc_data)){//SPIN_M
+    if(__RC_ISPRESSED_L1(g_rc_data) && __RC_ISPRESSED_L2(g_rc_data)){
+      first_up_mecha_move(FIRST_UP_MECHA_STOP);
+    }else if(__RC_ISPRESSED_L1(g_rc_data)){//SPIN_M
       first_up_mecha_move(FIRST_UP_MECHA_UP);
     }else if(__RC_ISPRESSED_L2(g_rc_data)){
       first_up_mecha_move(FIRST_UP_MECHA_DOWN);
     }else{
       first_up_mecha_move(FIRST_UP_MECHA_STOP);
     }
-    
+
+    if(__RC_ISPRESSED_R1(g_rc_data) && __RC_ISPRESSED_R2(g_rc_data)){
+      if(__RC_ISPRESSED_CIRCLE(g_rc_data)){
+	g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+	g_md_h[ZENEBA_MD].duty = ZENEBA_MAXDUTY;
+      }else if(__RC_ISPRESSED_CROSS(g_rc_data)){
+	g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[ZENEBA_MD].duty = ZENEBA_MAXDUTY;
+      }else{
+	g_md_h[ZENEBA_MD].mode = D_MMOD_BRAKE;
+	g_md_h[ZENEBA_MD].duty = 0;
+      }
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BRAKE;
+      g_md_h[ZENEBA_MD].duty = 0;
+    }
+
+    if(__RC_ISPRESSED_CIRCLE(g_rc_data)){
+      odmetry_func[0] = true;
+      odmetry_func[1] = true;
+      odmetry_func[2] = true;
+      odmetry_func_data[0] = 200.0;
+      odmetry_func_data[1] = 5700.0;
+      odmetry_func_data[2] = 0.0;
+      odmetry_position(position,0,true,odmetry_func,odmetry_func_data);
+    }
     ret = LEDSystem();
     if(ret){
       return ret;
@@ -340,7 +476,7 @@ int appTask(void){
   }
 
   if(now_mode != AUTO_TEST){
-    ret = odmetry_position(position,0);
+    ret = odmetry_position(position,0,false,odmetry_func,position);
     if(ret){
       return ret;
     }
@@ -352,7 +488,7 @@ int appTask(void){
     I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE);
     I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE);
     I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE);
-    ret = odmetry_position(position,1);
+    ret = odmetry_position(position,1,false,odmetry_func,position);
     ret = odmetry_position_recent(recent_position,1);
   }
 
@@ -1427,14 +1563,30 @@ static int LEDSystem(void){
 static 
 int ABSystem(void){
 
-  if(__RC_ISPRESSED_TRIANGLE(g_rc_data)){
-    g_ab_h[0].dat |= AB_UPMECHA_ON;
-    g_ab_h[0].dat |= AB_CENTER_ON;
-    g_ab_h[0].dat |= AB_SIDE_ON;
+  if(__RC_ISPRESSED_L2(g_rc_data) && __RC_ISPRESSED_L1(g_rc_data)){
+    if(__RC_ISPRESSED_TRIANGLE(g_rc_data)){
+      g_ab_h[0].dat |= AB_UPMECHA_ON;
+    }
+    if(__RC_ISPRESSED_CIRCLE(g_rc_data)){
+      g_ab_h[0].dat |= AB_RIGHT_ON;
+    }else{
+      g_ab_h[0].dat &= AB_RIGHT_OFF;
+    }
+    if(__RC_ISPRESSED_CROSS(g_rc_data)){
+      g_ab_h[0].dat |= AB_CENTER_ON;
+    }else{
+      g_ab_h[0].dat &= AB_CENTER_OFF;
+    }
+    if(__RC_ISPRESSED_SQARE(g_rc_data)){
+      g_ab_h[0].dat |= AB_LEFT_ON;
+    }else{
+      g_ab_h[0].dat &= AB_LEFT_OFF;
+    }
   }else{
     g_ab_h[0].dat &= AB_UPMECHA_OFF;
     g_ab_h[0].dat &= AB_CENTER_OFF;
-    g_ab_h[0].dat &= AB_SIDE_OFF;
+    g_ab_h[0].dat &= AB_RIGHT_OFF;
+    g_ab_h[0].dat &= AB_LEFT_OFF;
   }
 
   return EXIT_SUCCESS;
@@ -1530,8 +1682,10 @@ int odmetry_position_recent(double recent_position[MOVE_SAMPLE_VALUE][3], int re
 
   int i,j;
   double position[3] = {0.0, 0.0, 0.0};
-
-  odmetry_position(position,0);
+  double to_func[3] = {0.0, 0.0, 0.0};
+  bool to_func_flag[3];
+  
+  odmetry_position(position,0,false,to_func_flag,to_func);
   
   if(recet == 1){
     for(i=0;i<MOVE_SAMPLE_VALUE;i++){
@@ -1551,7 +1705,7 @@ int odmetry_position_recent(double recent_position[MOVE_SAMPLE_VALUE][3], int re
 }
 
 static
-int odmetry_position(double position[3], int recet){
+int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3]){
   static bool matrix_init = false;
   const int encoder_ppr = (2048)*4;
   const int tire_diameter = 48;
@@ -1564,6 +1718,20 @@ int odmetry_position(double position[3], int recet){
     for(i=0;i<3;i++){
       position[i] = 0.0;
       recent_position[i] = 0.0;
+    }
+    return 0;
+  }
+
+  if(adjust_flag){
+    for(i=0; i<3; i++){
+      if(adjust_xyz[i]){
+	position[i] = adjust_data[i];
+	if(i==0 || i==1){
+	  recent_position[i] = adjust_data[i] * (((double)(encoder_ppr))/((double)(tire_diameter)*M_PI));
+	}else{
+	  recent_position[i] = adjust_data[i];
+	}
+      }
     }
     return 0;
   }
@@ -1880,23 +2048,23 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
     break;
   }
 
-  if(operation == GET_DIFF){
-    if((abs(diff) > (500*(g_SY_system_counter-recent_system_ms))) && !first_flag){
-      diff = recent_value[encoder_num][0] - recent_value[encoder_num][1];
-      recent_temp_value = recent_value[encoder_num][0];
-      recent_value[encoder_num][0] = recent_value[encoder_num][0] + diff;
-      recent_value[encoder_num][1] = recent_temp_value;
-    }else{
-      recent_temp_value = recent_value[encoder_num][0];
-      recent_value[encoder_num][0] = value;
-      recent_value[encoder_num][1] = recent_temp_value;
-    }
-  }
+  /* if(operation == GET_DIFF){ */
+  /*   if((abs(diff) > (5000*(g_SY_system_counter-recent_system_ms))) && !first_flag){ */
+  /*     diff = recent_value[encoder_num][0] - recent_value[encoder_num][1]; */
+  /*     recent_temp_value = recent_value[encoder_num][0]; */
+  /*     recent_value[encoder_num][0] = recent_value[encoder_num][0] + diff; */
+  /*     recent_value[encoder_num][1] = recent_temp_value; */
+  /*   }else{ */
+  /*     recent_temp_value = recent_value[encoder_num][0]; */
+  /*     recent_value[encoder_num][0] = value; */
+  /*     recent_value[encoder_num][1] = recent_temp_value; */
+  /*   } */
+  /* } */
 
   if(first_flag) first_flag = false;
   recent_system_ms = g_SY_system_counter;
   
-  /* recent_value[encoder_num][0] = value; */
+  recent_value[encoder_num][0] = value;
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
     if(operation != RESET_ENCODER_VALUE){
       if(message_count >= 3){
@@ -1920,6 +2088,17 @@ int all_motor_stop(void){
     g_md_h[i].duty = 0; 
     g_md_h[i].mode = D_MMOD_BRAKE;
   }
+  return 0;
+}
+
+static
+int sus_motor_stop(void){
+  
+  g_md_h[R_F_KUDO_MD].duty = 0; 
+  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+  g_md_h[L_B_KUDO_MD].duty = 0; 
+  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+  
   return 0;
 }
 
