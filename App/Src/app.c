@@ -131,6 +131,7 @@ int appTask(void){
 
   static int destination_adjust_timecount = 0;
   static bool next_motion_recet_flag = true;
+  static int next_motion_delay_count=0;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -192,6 +193,7 @@ int appTask(void){
       test_flag = true;
     }
     if(__RC_ISPRESSED_CROSS(g_rc_data)){
+      next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       test_flag = false;
       next_motion_recet_flag = true;
@@ -263,7 +265,7 @@ int appTask(void){
 	  destination_adjust_timecount = 0;
 	  sus_motor_stop();
 	  odmetry_func[0] = true;
-	  odmetry_func[1] = false;
+	  odmetry_func[1] = true;
 	  odmetry_func[2] = true;
 	  odmetry_func_data[0] = 200.0;
 	  odmetry_func_data[1] = 5700.0;
@@ -287,7 +289,7 @@ int appTask(void){
 	  next_motion_recet_flag = false;
 	}
 	
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, false, true);
       	if(now_moving_situation == ARRIVED_TARGET){
 	  next_motion_recet_flag = true;
 	  moving_count++;
@@ -349,21 +351,26 @@ int appTask(void){
       	break;
       case 6:
 	if(next_motion_recet_flag){
-	  odmetry_position(position,0,false,odmetry_func,position);
-	  target_zahyou_1[0] = -1750.0;
-	  target_zahyou_1[1] = position[1];//6100.0;
-	  target_zahyou_2[0] = -3450.0;
-	  target_zahyou_2[1] = position[1];//6100.0;
-	  for(i=0; i<8; i++){
-	    g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+	  next_motion_delay_count++;
+	  if(next_motion_delay_count>=100){
+	    odmetry_position(position,0,false,odmetry_func,position);
+	    target_zahyou_1[0] = -1750.0;
+	    target_zahyou_1[1] = position[1]+50;//6100.0;
+	    target_zahyou_2[0] = -3450.0;
+	    target_zahyou_2[1] = position[1]+50;//6100.0;
+	    for(i=0; i<8; i++){
+	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+	    }
+	    next_motion_delay_count = 0;
+	    next_motion_recet_flag = false;
 	  }
-	  next_motion_recet_flag = false;
+	}else{
+	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, false, true);
+	  if(now_moving_situation == ARRIVED_TARGET){
+	    next_motion_recet_flag = true;
+	    moving_count++;
+	  }
 	}
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
-      	if(now_moving_situation == ARRIVED_TARGET){
-	  next_motion_recet_flag = true;
-      	  moving_count++;
-      	}
       	break;
       }
       //now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
@@ -1200,6 +1207,10 @@ int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double
 
   *right_duty_adjust = (straight_duty/1000.0) * right_adjust_value; 
   *left_duty_adjust = (straight_duty/1000.0) * left_adjust_value; 
+
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("degree:[%4d] distance:[%4d] now_posi[%1d]\n",(int)round(degree),(int)round(distance),now_position);
+  }
   
   return 0;
 }
@@ -1920,16 +1931,16 @@ NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VAL
   }
 
   if(mode != PLUS_Y && mode != MINUS_Y){
-    a_dis = -(get_zahyou_2[1]-get_zahyou_1[1])/(get_zahyou_2[0]-get_zahyou_1[0]);
-    b_dis = 1.0;
-    c_dis = -(-a_dis*get_zahyou_1[0] + get_zahyou_1[1]);
+    /* a_dis = -(get_zahyou_2[1]-get_zahyou_1[1])/(get_zahyou_2[0]-get_zahyou_1[0]); */
+    /* b_dis = 1.0; */
+    /* c_dis = -(-a_dis*get_zahyou_1[0] + get_zahyou_1[1]); */
+    distance = fabs(get_zahyou_1[1] - get_y[0]); 
   }else{
     a_dis = 1.0;
     b_dis = 0.0;
     c_dis = -get_zahyou_1[0];
+    distance = fabs(-a_dis*get_x[0] + b_dis*get_y[0] - c_dis) / sqrt(a_dis*a_dis+b_dis*b_dis);
   }
-  
-  distance = fabs(-a_dis*get_x[0] + b_dis*get_y[0] - c_dis) / sqrt(a_dis*a_dis+b_dis*b_dis);
   
   if(!x_move_flag && !y_move_flag){
     position = NOW_POSITION_STOP;

@@ -70,7 +70,7 @@ int appInit(void);
 
 #define STRAIGHT_MAX_DUTY 8000
 
-#define SUS_LOW_DUTY 1950.0
+#define SUS_LOW_DUTY 2150.0
 
 #define ARM_UP_MD 4
 #define ARM_SPIN_MD 5 
