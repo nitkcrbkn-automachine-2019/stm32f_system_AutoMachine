@@ -47,10 +47,9 @@ NowPosition_t get_deg_dis(MovingDestination_t mode, double get_x[MOVE_SAMPLE_VAL
 static
 FirstUpMecha_t first_up_mecha_move(FirstUpMecha_t mode);
 static
-void fill_array(double array1[], double array2[], int size);
+ZenebaMecha_t zeneba_mecha_move(int target, int recet, int test);
 static
-LineTrace_State_t find_robotdirection(uint8_t *front, uint8_t *behind, Robot_Direction_t *robot_direction, int reset, Direction_t reset_direction);
-//linetrace_state = find_robotdirection(g_ss_h[PHOTOARRAY_FRONT].data,g_ss_h[PHOTOARRAY_BEHIND].data,&robot_direction,1,NO_LINE);
+void fill_array(double array1[], double array2[], int size);
 
 static char *testmode_name[] = {
   "MANUAL_SUSPENSION",
@@ -139,6 +138,8 @@ int appTask(void){
   static towel_3_flag = false;
   static towel_all_flag = false;
   static sheets_towel_flag = false;
+
+  static ZenebaMecha_t zeneba_mecha_mode = ZENEBA_SPIN_NOW;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -298,7 +299,7 @@ int appTask(void){
 	  destination_adjust_timecount = 0;
 	  sus_motor_stop();
 	  odmetry_func[0] = true;
-	  odmetry_func[1] = true;
+	  odmetry_func[1] = false;
 	  odmetry_func[2] = true;
 	  odmetry_func_data[0] = 200.0;
 	  odmetry_func_data[1] = 3700.0;
@@ -322,7 +323,7 @@ int appTask(void){
 	  next_motion_recet_flag = false;
 	}
 	
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
 	  next_motion_recet_flag = true;
 	  moving_count++;
@@ -334,7 +335,7 @@ int appTask(void){
 	  target_zahyou_1[0] = position[0];//-1750.0;
 	  target_zahyou_1[1] = 3700.0;
 	  target_zahyou_2[0] = position[0];//-1750.0;
-	  target_zahyou_2[1] = 4350.0;
+	  target_zahyou_2[1] = 4400.0;
 	  for(i=0; i<8; i++){
 	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
 	  }
@@ -350,7 +351,7 @@ int appTask(void){
 	if(next_motion_recet_flag){
 	  odmetry_position(position,0,false,odmetry_func,position);
 	  target_zahyou_1[0] = position[0];//-1750.0;
-	  target_zahyou_1[1] = 4350.0;
+	  target_zahyou_1[1] = 4400.0;
 	  target_zahyou_2[0] = position[0];//-1750.0;
 	  target_zahyou_2[1] = 3700.0;
 	  for(i=0; i<8; i++){
@@ -378,7 +379,7 @@ int appTask(void){
 	  next_motion_recet_flag = false;
 	}
 	
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
 	  next_motion_recet_flag = true;
 	  moving_count++;
@@ -390,7 +391,7 @@ int appTask(void){
 	  target_zahyou_1[0] = position[0];//-2550.0;
 	  target_zahyou_1[1] = 3700.0;
 	  target_zahyou_2[0] = position[0];//-2550.0;
-	  target_zahyou_2[1] = 4350.0;
+	  target_zahyou_2[1] = 4400.0;
 	  for(i=0; i<8; i++){
 	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
 	  }
@@ -406,7 +407,7 @@ int appTask(void){
 	if(next_motion_recet_flag){
 	  odmetry_position(position,0,false,odmetry_func,position);
 	  target_zahyou_1[0] = position[0];//-2550.0;
-	  target_zahyou_1[1] = 4350.0;
+	  target_zahyou_1[1] = 4400.0;
 	  target_zahyou_2[0] = position[0];//-2550.0;
 	  target_zahyou_2[1] = 3700.0;
 	  for(i=0; i<8; i++){
@@ -434,7 +435,7 @@ int appTask(void){
 	  next_motion_recet_flag = false;
 	}
 	
-      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+      	now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
       	if(now_moving_situation == ARRIVED_TARGET){
 	  next_motion_recet_flag = true;
 	  moving_count++;
@@ -446,7 +447,7 @@ int appTask(void){
 	  target_zahyou_1[0] = position[0];//-3250.0;
 	  target_zahyou_1[1] = 3700.0;
 	  target_zahyou_2[0] = position[0];//-3250.0;
-	  target_zahyou_2[1] = 4350.0;
+	  target_zahyou_2[1] = 4400.0;
 	  for(i=0; i<8; i++){
 	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
 	  }
@@ -462,7 +463,7 @@ int appTask(void){
 	if(next_motion_recet_flag){
 	  odmetry_position(position,0,false,odmetry_func,position);
 	  target_zahyou_1[0] = position[0];//-3250.0;
-	  target_zahyou_1[1] = 4350.0;
+	  target_zahyou_1[1] = 4400.0;
 	  target_zahyou_2[0] = position[0];//-3250.0;
 	  target_zahyou_2[1] = 3700.0;
 	  for(i=0; i<8; i++){
@@ -492,7 +493,7 @@ int appTask(void){
 	    next_motion_recet_flag = false;
 	  }
 	}else{
-	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
 	  if(now_moving_situation == ARRIVED_TARGET){
 	    next_motion_recet_flag = true;
 	    moving_count++;
@@ -782,14 +783,13 @@ int appTask(void){
     }
 
     if(__RC_ISPRESSED_CIRCLE(g_rc_data)){
-      odmetry_func[0] = true;
-      odmetry_func[1] = true;
-      odmetry_func[2] = true;
-      odmetry_func_data[0] = 200.0;
-      odmetry_func_data[1] = 5700.0;
-      odmetry_func_data[2] = 0.0;
-      odmetry_position(position,0,true,odmetry_func,odmetry_func_data);
+      if(zeneba_mecha_mode != ZENEBA_SPIN_END){
+	zeneba_mecha_mode = zeneba_mecha_move(0,0,1);
+      }
+    }else{
+      zeneba_mecha_mode = ZENEBA_SPIN_NOW;
     }
+    
     ret = LEDSystem();
     if(ret){
       return ret;
@@ -824,6 +824,7 @@ int appTask(void){
 
 
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    MW_printf("SY : [%10d]\n",g_SY_system_counter);
     MW_printf("mode : [%30s]\n",testmode_name[now_mode]);
     MW_printf("moving_situ : [%20s]\n",moving_situation_name[now_moving_situation]);
 
@@ -1833,6 +1834,115 @@ int get_diff(int target,int now_degree,int encoder_ppr){
 }
 
 static
+ZenebaMecha_t zeneba_mecha_move(int target, int recet, int test){
+  static int now_position = 0;
+  static int count = 0;
+  static int target_revolution = 0;
+  const int one_revo_ms = 200;
+  ZenebaMecha_t return_value;
+  
+  if(recet == 1){
+    count = 0;
+    return_value = ZENEBA_RECET;
+    return return_value;
+  }
+
+  if(test == 1){
+    count++;
+    if(one_revo_ms*1 > count){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      g_md_h[ZENEBA_MD].duty = ZENEBA_MAXDUTY;
+      return_value = ZENEBA_SPIN_NOW;
+      return return_value;
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BRAKE;
+      g_md_h[ZENEBA_MD].duty = 0;
+      return_value = ZENEBA_SPIN_END;
+      count = 0;
+      return return_value;
+    }
+  }
+
+  switch(now_position){
+  case 0:
+    if(target==1 || target==2 || target==3){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = target-now_position;
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      target_revolution = 6-target;
+    }
+    break;
+  case 1:
+    if(target==2 || target==3 || target==4){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = target-now_position;
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      if(target==5){
+	target_revolution = 2;
+      }else if(target==0){
+	target_revolution = 1;
+      }
+    }
+    break;
+  case 2:
+    if(target==3 || target==4){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = target-now_position;
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      if(target==5){
+	target_revolution = 3;
+      }else{
+	target_revolution = 2-target;
+      }
+    }
+    break;
+  case 3:
+    if(target==4 || target==5 || target==0){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = abs(target-now_position);
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      target_revolution = 3-target;
+    }
+    break;
+  case 4:
+    if(target==5 || target==0){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = abs(target-now_position);
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      target_revolution = 4-target;
+    }
+    break;
+  case 5:
+    if(target==0 || target==1 || target==2){
+      g_md_h[ZENEBA_MD].mode = D_MMOD_FORWARD;
+      target_revolution = target+1;
+    }else{
+      g_md_h[ZENEBA_MD].mode = D_MMOD_BACKWARD;
+      target_revolution = 5-target;
+    }
+    break;
+  }
+
+  count++;
+  if(target_revolution*one_revo_ms > count){
+    g_md_h[ZENEBA_MD].duty = ZENEBA_MAXDUTY;
+    return_value = ZENEBA_SPIN_NOW;
+  }else{
+    g_md_h[ZENEBA_MD].duty = 0;
+    g_md_h[ZENEBA_MD].mode = D_MMOD_BRAKE;
+    return_value = ZENEBA_SPIN_END;
+    count = 0;
+  }
+  
+  return return_value;
+}
+
+static
 FirstUpMecha_t first_up_mecha_move(FirstUpMecha_t mode){
   //static bool up_sw_flag=false,under_sw_flag=false;
   FirstUpMecha_t return_mode;
@@ -2385,9 +2495,9 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
   }
 
   if(operation == GET_DIFF){
-    if((abs(diff) > (1000*(g_SY_system_counter - recent_time[encoder_num]))) ){//&& !first_flag){
+    if((abs(diff) > (106*(g_SY_system_counter - recent_time[encoder_num]))) ){//&& !first_flag){
       diff = recent_diff[encoder_num];
-      recent_diff[encoder_num] = diff;
+      //recent_diff[encoder_num] = diff;
     }else{
       recent_diff[encoder_num] = diff;
     }
@@ -2441,196 +2551,3 @@ void fill_array(double array1[], double array2[], int size){
   }
 }
 
-static
-LineTrace_State_t find_robotdirection(uint8_t *front, uint8_t *behind, Robot_Direction_t *robot_direction, int reset, Direction_t reset_direction){
-  //LED側
-  // 
-  //   16    15    14    13    12    11    10    9     8     7     6     5     4     3     2     1
-  //   o     o     o     o     o     o     o     o     o     o     o     o     o     o     o     o  
-  //^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^  ^
-  //33 32 31 30 29 28 27 26 25 24 23 22 21 20 19 18 17 16 15 14 13 12 11 10 9  8  7  6  5  4  3  2  1 
-
-  static Robot_Direction_t recent_direction = {
-    .direction = NO_LINE,
-    .gap_degree = 0,
-  };
-  LineTrace_State_t state;
-  Direction_t front_direction;
-  Direction_t behind_direction;
-  uint16_t front_decimal = 0;
-  uint16_t behind_decimal = 0;
-  int front_binary[16];
-  int behind_binary_reverse[16];
-  int behind_binary[16];
-  int front_right_on = 0,front_left_on = 0,front_middle = 0;
-  int behind_right_on = 0,behind_left_on = 0,behind_middle = 0;
-  static int recent_front_middle = 0,recent_behind_middle = 0;
-  static bool first_flag = true;
-  int i;
-
-  if(reset==1){
-    recent_direction.direction = NO_LINE;
-    recent_direction.gap_degree = 0;
-    state = RESET_DATA;
-    first_flag = true;
-    return state; 
-  }
-
-  if(first_flag){
-    if(reset_direction == D_MIDDLE){
-      recent_front_middle = 17;
-      recent_behind_middle = 17;
-    }else if(reset_direction == D_RIGHT){
-      recent_front_middle = 33;
-      recent_behind_middle = 33;
-    }else if(reset_direction == D_LEFT){
-      recent_front_middle = 1;
-      recent_behind_middle = 1;
-    }
-    first_flag = false;
-  }
-  
-  front_decimal = (uint16_t)((*front) << 8) + (uint8_t)(*(front+1));
-  change_binary(front_decimal,front_binary);
-  
-  for(i=0;i<16;i++){
-    if(front_binary[i] == 1){
-      front_right_on = i+1;
-      break;
-    }
-  }
-  
-  for(i=15;i>=0;i--){
-    if(front_binary[i] == 1){
-      front_left_on = i+1;
-      break;
-    }
-  }
-
-  front_middle = ((front_left_on*2)-(front_right_on*2))/2 + front_right_on*2;
-
-  behind_decimal = (uint16_t)((*behind) << 8) + (uint8_t)(*(behind+1));
-  change_binary(behind_decimal,behind_binary_reverse);
-
-  for(i=0;i<16;i++){
-    behind_binary[i] = behind_binary_reverse[15-i];
-  }
-  
-  for(i=0;i<16;i++){
-    if(behind_binary[i] == 1){
-      behind_right_on = i+1;
-      break;
-    }
-  }
-  
-  for(i=15;i>=0;i--){
-    if(behind_binary[i] == 1){
-      behind_left_on = i+1;
-      break;
-    }
-  }
-
-  behind_middle = ((behind_left_on*2)-(behind_right_on*2))/2 + behind_right_on*2;
-
-  if(front_decimal == 0 && behind_decimal == 0){
-    if(recent_direction.direction == NO_LINE){
-      robot_direction->direction = NO_LINE;
-      robot_direction->gap_degree = 0;
-    }else{
-      robot_direction->direction = recent_direction.direction;
-      robot_direction->gap_degree = recent_direction.gap_degree;
-    }
-    state = RECENT_DATA;
-    return state;
-    
-  }else if(front_decimal == 0){
-    if(recent_front_middle > 31){
-      front_middle = 39;
-    }else if(recent_front_middle < 3){
-      front_middle = -5;
-    }else{
-      front_middle = recent_front_middle;
-    }
-    state = CURRENT_DATA;
-  }else if(behind_decimal == 0){
-    if(recent_behind_middle > 31){
-      behind_middle = 39;
-    }else if(recent_behind_middle < 3){
-      behind_middle = -5;
-    }else{
-      behind_middle = recent_behind_middle;
-    }
-    state = CURRENT_DATA;
-  }
-  
-  if(front_middle < 17){
-    front_direction = D_RIGHT;
-  }else if(front_middle > 17){
-    front_direction = D_LEFT;
-  }else{
-    front_direction = D_MIDDLE;
-  }
-
-  if(behind_middle < 17){
-    behind_direction = D_RIGHT;
-  }else if(behind_middle > 17){
-    behind_direction = D_LEFT;
-  }else{
-    behind_direction = D_MIDDLE;
-  }
-
-  if(front_direction == D_MIDDLE && behind_direction == D_MIDDLE){
-    robot_direction->direction = D_MIDDLE;
-    robot_direction->gap_degree = 0;
-  }else if(front_direction == D_RIGHT && behind_direction == D_RIGHT){
-    robot_direction->direction = D_LEFT;
-    if(abs(front_middle-17) > abs(behind_middle-17)){
-      robot_direction->gap_degree = abs(front_middle-17);
-    }else{
-      robot_direction->gap_degree = abs(behind_middle-17);
-    }
-  }else if(front_direction == D_LEFT && behind_direction == D_LEFT){
-    robot_direction->direction = D_RIGHT;
-    if(abs(front_middle-17) > abs(behind_middle-17)){
-      robot_direction->gap_degree = abs(front_middle-17);
-    }else{
-      robot_direction->gap_degree = abs(behind_middle-17);
-    }
-  }else if((front_direction == D_RIGHT && behind_direction == D_LEFT)|| (front_direction == D_MIDDLE && behind_direction == D_LEFT) || (front_direction == D_RIGHT && behind_direction == D_MIDDLE) ){
-    robot_direction->direction = D_FRONT_LEFT;
-    robot_direction->gap_degree = abs(front_middle - behind_middle);
-  }else if((front_direction == D_LEFT && behind_direction == D_RIGHT) || (front_direction == D_MIDDLE && behind_direction == D_RIGHT) || (front_direction == D_LEFT && behind_direction == D_MIDDLE)){
-    robot_direction->direction = D_FRONT_RIGHT;
-    robot_direction->gap_degree = abs(front_middle - behind_middle);
-  }
-
-  recent_front_middle = front_middle;
-  recent_behind_middle = behind_middle;
-  recent_direction.direction = robot_direction->direction;
-  recent_direction.gap_degree = robot_direction->gap_degree;
-
-  state = CURRENT_DATA;
-  return state;
-  
-  /* for(i=15;i>=0;i--){ */
-  /*   printf("%2d",front_binary[i]); */
-  /* } */
-  /* printf("\n"); */
-  /* for(i=0;i<33-front_middle;i++){ */
-  /*   printf(" "); */
-  /* } */
-  /* printf("^\n"); */
-
-  /* for(i=15;i>=0;i--){ */
-  /*   printf("%2d",behind_binary[i]); */
-  /* } */
-  /* printf("\n"); */
-  /* for(i=0;i<33-behind_middle;i++){ */
-  /*   printf(" "); */
-  /* } */
-  /* printf("^\n"); */
-
-  /* printf("\n%d",front_right_on); */
-  /* printf("\n%d",front_left_on); */
-  /* printf("\n%d",front_middle); */
-}

@@ -66,7 +66,7 @@ int appInit(void);
 
 #define ARM_UP_MAXDUTY 5000
 #define ARM_SPIN_MAXDUTY 3000 //gyaku
-#define ZENEBA_MAXDUTY 2500
+#define ZENEBA_MAXDUTY 3500
 
 #define STRAIGHT_MAX_DUTY 8000
 
@@ -153,24 +153,11 @@ typedef enum{
 }FirstUpMecha_t;
 
 typedef enum{
-  D_RIGHT=0,
-  D_LEFT=1,
-  D_FRONT_RIGHT=2,
-  D_FRONT_LEFT=3,
-  D_MIDDLE = 4,
-  NO_LINE = 5,
-}Direction_t;
+  ZENEBA_SPIN_NOW = 0,
+  ZENEBA_SPIN_END = 1,
+  ZENEBA_RECET = 2,
+}ZenebaMecha_t;
 
-typedef struct{
-  uint8_t gap_degree;
-  Direction_t direction;
-}Robot_Direction_t;
-
-typedef enum{
-  RECENT_DATA =0,
-  CURRENT_DATA=1,
-  RESET_DATA  = 2,
-}LineTrace_State_t;
 
 #endif
 
