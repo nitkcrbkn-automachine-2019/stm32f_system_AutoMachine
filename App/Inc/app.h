@@ -113,8 +113,15 @@ typedef enum{
 typedef enum{
   MANUAL_SUSPENSION = 0,
   AUTO_TEST = 1,
-  NO_OPERATION = 2,
-  STOP_EVERYTHING = 3,
+  AUTO_FIRSTMECHA_MOVE= 2,
+  AUTO_SHEETS= 3,
+  AUTO_TOWEL_ALL= 4,
+  AUTO_TOWEL_3= 5,
+  AUTO_TOWEL_2= 6,
+  AUTO_TOWEL_1= 7,
+  AUTO_SHEETS_TOWEL = 8,
+  NO_OPERATION = 9,
+  STOP_EVERYTHING = 10,
 }TestMode_t;
 
 typedef enum{

@@ -49,6 +49,7 @@ int DD_I2C2Receive(uint8_t add, uint8_t *data, uint8_t size){
 int DD_doTasks(void){
   int i;
   int ret;
+  static int count = 0;
 #if DD_NUM_OF_MD
   for( i = 0; i < DD_NUM_OF_MD; i++ ){
     ret = DD_send2MD(&g_md_h[i]);
@@ -80,13 +81,17 @@ int DD_doTasks(void){
     }
 #endif
 #if DD_NUM_OF_SS
-  for(i=0; i<DD_NUM_OF_SS; i++){
-    ret = DD_SSPutReceiveRequest(i);
-    if( ret ){
-      return ret;
+  count++;
+  if(count >= 2){
+    for(i=0; i<DD_NUM_OF_SS; i++){
+      ret = DD_SSPutReceiveRequest(i);
+      if( ret ){
+	return ret;
+      }
     }
+    DD_receive2SS();
+    count = 0;
   }
-  DD_receive2SS();
 #endif
 #if DD_USE_ENCODER1
   ret = DD_encoder1update();

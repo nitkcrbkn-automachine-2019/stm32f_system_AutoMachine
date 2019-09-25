@@ -54,6 +54,13 @@ void fill_array(double array1[], double array2[], int size);
 static char *testmode_name[] = {
   "MANUAL_SUSPENSION",
   "AUTO_TEST",
+  "AUTO_FIRSTMECHA_MOVE",
+  "AUTO_SHEETS",
+  "AUTO_TOWEL_ALL",
+  "AUTO_TOWEL_3",
+  "AUTO_TOWEL_2",
+  "AUTO_TOWEL_1",
+  "AUTO_SHEETS_TOWEL",
   "NO_OPERATION",
   "STOP_EVERYTHING",
 };
@@ -140,6 +147,11 @@ int appTask(void){
   static sheets_towel_flag = false;
 
   static ZenebaMecha_t zeneba_mecha_mode = ZENEBA_SPIN_NOW;
+
+  static FirstUpMecha_t first_up_mecha_situ;
+  static bool first_up_mecha_flag = false;
+  static bool first_up_mecha_up = false;
+  static bool first_up_mecha_down = false;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -186,6 +198,39 @@ int appTask(void){
   case STOP_EVERYTHING:
     all_motor_stop();
     break;//////////////////////////////////////////////////////
+  case AUTO_FIRSTMECHA_MOVE:
+    if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){
+      first_up_mecha_flag = true;
+      first_up_mecha_up = true;
+      first_up_mecha_down = false;
+    }else if(__RC_ISPRESSED_TRIANGLE(g_rc_data) && triangle_flag){
+      first_up_mecha_flag = true;
+      first_up_mecha_up = false;
+      first_up_mecha_down = true;
+    }
+    if(__RC_ISPRESSED_CROSS(g_rc_data)){
+      first_up_mecha_flag = false;
+      first_up_mecha_up = false;
+      first_up_mecha_down = false;
+    }
+    if(!first_up_mecha_flag){
+      first_up_mecha_flag = false;
+      first_up_mecha_up = false;
+      first_up_mecha_down = false;
+    }else{
+      if(first_up_mecha_up){
+	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_UP);
+      }else if(first_up_mecha_down){
+	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_DOWN);
+      }
+      if(first_up_mecha_situ == FIRST_UP_MECHA_STOP){
+	first_up_mecha_flag = false;
+	first_up_mecha_up = false;
+	first_up_mecha_down = false;
+      }
+    }
+    
+    break;/////////////////////////////////////////////////////////////////////////
   case AUTO_TEST:///////////////////////////////////////////////////////////////////////////////////////////////////////
     /* This is BLUE ZONE pro */
 
@@ -790,10 +835,10 @@ int appTask(void){
       zeneba_mecha_mode = ZENEBA_SPIN_NOW;
     }
     
-    ret = LEDSystem();
-    if(ret){
-      return ret;
-    }
+    /* ret = LEDSystem(); */
+    /* if(ret){ */
+    /*   return ret; */
+    /* } */
 
     ret = ABSystem();
     if(ret){
@@ -1411,8 +1456,19 @@ int decide_turn_duty(double *right_duty_adjust, double *left_duty_adjust, double
     get_x[i] = position[i][0];
     get_y[i] = position[i][1];
   }
-  now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
-
+  //now_position = get_deg_dis(mode, get_x, get_y, zahyou_1, zahyou_2, &degree, &distance);
+  
+  if(mode != PLUS_Y && mode != MINUS_Y){
+    /* a_dis = -(get_zahyou_2[1]-get_zahyou_1[1])/(get_zahyou_2[0]-get_zahyou_1[0]); */
+    /* b_dis = 1.0; */
+    /* c_dis = -(-a_dis*get_zahyou_1[0] + get_zahyou_1[1]); */
+    distance = fabs(get_zahyou_1[1] - get_y[0]); 
+  }else{
+    a_dis = 1.0;
+    b_dis = 0.0;
+    c_dis = -get_zahyou_1[0];
+    distance = fabs(-a_dis*get_x[0] + b_dis*get_y[0] - c_dis) / sqrt(a_dis*a_dis+b_dis*b_dis);
+  }
   degree = position[0][2];
   
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
@@ -2155,7 +2211,8 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
   const int tire_diameter = 48;
   static double cal_matrix[3][4];
   static double recent_position[3] = {0.0, 0.0, 0.0};
-  double temp_position[3],return_position[3],return_position_val[3],recent_position_rad,encoder_diff[4];
+  double temp_position[3],return_position[3],return_position_val[3],recent_position_rad;//encoder_diff[4];
+  int32_t encoder_diff[4];
   int i,j;
 
   if(recet==1){
@@ -2220,13 +2277,13 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
   }
   
   for(i=0;i<4;i++){
-    encoder_diff[i] = (double)(I2C_Encoder(i,GET_DIFF));
+    encoder_diff[i] = I2C_Encoder(i,GET_DIFF);
   }
 
   for(i=0;i<3;i++){
     temp_position[i] = 0.0;
     for(j=0;j<4;j++){
-      temp_position[i] += cal_matrix[i][j] * encoder_diff[j];
+      temp_position[i] += cal_matrix[i][j] * (double)(encoder_diff[j]);
     }
     //return_position[i] = recent_position[i] + temp_position[i];
   }
@@ -2439,6 +2496,7 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
   static int message_count = 0;
   static bool first_flag = true;
   static uint32_t recent_system_ms = 0;
+  int i;
   
   switch(encoder_num){
   case 0:
@@ -2495,9 +2553,14 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
   }
 
   if(operation == GET_DIFF){
-    if((abs(diff) > (106*(g_SY_system_counter - recent_time[encoder_num]))) ){//&& !first_flag){
+    if(abs(diff) == 0){
+      
+    }else if((abs(diff) > (1500*(g_SY_system_counter - recent_time[encoder_num]))) ){//&& !first_flag){
       diff = recent_diff[encoder_num];
       //recent_diff[encoder_num] = diff;
+      for(i=0; i<8; i++){
+	g_ld_h[0].mode[i] = D_LMOD_BLINK_BLUE;
+      }
     }else{
       recent_diff[encoder_num] = diff;
     }
@@ -2517,6 +2580,9 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation){
     }
   }
   if(operation == GET_DIFF){
+    if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+      MW_printf("<E%1d_diff>[%d][%d]\n",encoder_num,diff,value);
+    }
     return diff;
   }
   return value;

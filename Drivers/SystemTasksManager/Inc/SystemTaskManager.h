@@ -3,7 +3,7 @@
 
 #include "DD_RC.h"
 #define _INTERVAL_MS 10
-#define _MESSAGE_INTERVAL_MS 100
+#define _MESSAGE_INTERVAL_MS 150
 
 typedef enum{
   lmode_wait_for_rc = 0,
