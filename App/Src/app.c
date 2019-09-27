@@ -57,14 +57,16 @@ void fill_array(double array1[], double array2[], int size);
 
 static char *testmode_name[] = {
   "MANUAL_SUSPENSION",
-  "AUTO_TEST",
-  "AUTO_FIRSTMECHA_MOVE",
+  "AUTO_FIRSTMECHA_UP",
+  "AUTO_FIRSTMECHA_DOWN",
   "AUTO_SHEETS",
   "AUTO_TOWEL_ALL",
   "AUTO_TOWEL_3",
   "AUTO_TOWEL_2",
   "AUTO_TOWEL_1",
   "AUTO_SHEETS_TOWEL",
+  "AUTO_FIRSTMECHA_MOVE",
+  "AUTO_TEST",
   "NO_OPERATION",
   "STOP_EVERYTHING",
 };
@@ -127,6 +129,7 @@ int appTask(void){
   static bool circle_flag,cross_flag,sqare_flag,triangle_flag;
   static bool up_flag,down_flag,right_flag,left_flag;
   static bool r1_flag,r2_flag,l1_flag,l2_flag;
+  static bool p_start_flag,p_right_flag,p_left_flag,p_recet_flag;
 
   static double target_zahyou_1[2],target_zahyou_2[2];
 
@@ -161,6 +164,10 @@ int appTask(void){
   static bool first_up_mecha_flag = false;
   static bool first_up_mecha_up = false;
   static bool first_up_mecha_down = false;
+
+  static bool is_pressed_start_flag = false;
+  static bool is_pressed_recet_flag = false;
+  static GameZone_t game_zone = BLUE_ZONE;
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
   if(!__RC_ISPRESSED_CROSS(g_rc_data)) cross_flag = true;
@@ -175,6 +182,25 @@ int appTask(void){
   if(!__RC_ISPRESSED_L1(g_rc_data)) l1_flag = true;
   if(!__RC_ISPRESSED_L2(g_rc_data)) l2_flag = true;
 
+  if(!PANEL_START_SW()) p_start_flag = true;
+  if(!PANEL_RIGHT_SW()) p_right_flag = true;
+  if(!PANEL_LEFT_SW()) p_left_flag = true;
+  if(!PANEL_RECET_SW()) p_recet_flag = true;
+  
+  if(PANEL_START_SW() && p_start_flag){
+    is_pressed_start_flag = true;
+    is_pressed_recet_flag = false;
+  }
+  if(PANEL_RECET_SW() && p_recet_flag){
+    is_pressed_start_flag = false;
+    is_pressed_recet_flag = true;
+  }
+  if(PANEL_ZONE_SW()){
+    game_zone = RED_ZONE;
+  }else{
+    game_zone = BLUE_ZONE;
+  }
+  
   if(__RC_ISPRESSED_UP(g_rc_data) && up_flag){
     arm_mecha_target++;
     if(arm_mecha_target >= 5){
@@ -183,21 +209,23 @@ int appTask(void){
     up_flag = false;
   }
   
-  if(__RC_ISPRESSED_RIGHT(g_rc_data) && right_flag){
+  if((__RC_ISPRESSED_RIGHT(g_rc_data) && right_flag) || (PANEL_RIGHT_SW() && p_right_flag)){
     if(now_mode == STOP_EVERYTHING){
       now_mode = MANUAL_SUSPENSION;
     }else{
       now_mode++;
     }
     right_flag = false;
+    p_right_flag = false;
   }
-  if(__RC_ISPRESSED_LEFT(g_rc_data) && left_flag){
+  if((__RC_ISPRESSED_LEFT(g_rc_data) && left_flag) || (PANEL_LEFT_SW() && p_left_flag)){
     if(now_mode == MANUAL_SUSPENSION){
       now_mode = STOP_EVERYTHING;
     }else{
       now_mode--;
     }
     left_flag = false;
+    p_left_flag = false;
   }
   
   /* if(__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_R2(g_rc_data)&& */
@@ -215,6 +243,38 @@ int appTask(void){
   case STOP_EVERYTHING:
     all_motor_stop();
     break;//////////////////////////////////////////////////////
+  case AUTO_FIRSTMECHA_UP:
+    if(is_pressed_recet_flag){
+      g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
+      g_ld_h[0].mode[7] = D_LMOD_BLINK_YELLOW;
+      first_up_mecha_move(FIRST_UP_MECHA_STOP);
+      first_up_mecha_situ  = FIRST_UP_MECHA_UP;
+      first_up_mecha_flag = true;
+    }else if(is_pressed_start_flag){
+      if(first_up_mecha_flag){
+	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_UP);
+	if(first_up_mecha_situ == FIRST_UP_MECHA_STOP){
+	  first_up_mecha_flag = false;
+	}
+      }
+    }
+    break;///////////////////////////////////////////////////////
+  case AUTO_FIRSTMECHA_DOWN:
+    if(is_pressed_recet_flag){
+      g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
+      g_ld_h[0].mode[7] = D_LMOD_BLINK_GREEN;
+      first_up_mecha_move(FIRST_UP_MECHA_STOP);
+      first_up_mecha_situ  = FIRST_UP_MECHA_DOWN;
+      first_up_mecha_flag = true;
+    }else if(is_pressed_start_flag){
+      if(first_up_mecha_flag){
+	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_DOWN);
+	if(first_up_mecha_situ == FIRST_UP_MECHA_STOP){
+	  first_up_mecha_flag = false;
+	}
+      }
+    }
+    break;///////////////////////////////////////////////////////
   case AUTO_FIRSTMECHA_MOVE:
     if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){
       first_up_mecha_flag = true;
@@ -914,7 +974,7 @@ int appTask(void){
   }
 
   
-  if(__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_L1(g_rc_data)){
+  if((__RC_ISPRESSED_R1(g_rc_data)&&__RC_ISPRESSED_L1(g_rc_data)) || PANEL_RECET_SW()){
     I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0);
     I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0);
     I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0);
@@ -925,42 +985,23 @@ int appTask(void){
 
 
   if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
-    MW_printf("SY : [%10d]\n",g_SY_system_counter);
+    //MW_printf("SY : [%10d]\n",g_SY_system_counter);
     MW_printf("mode : [%30s]\n",testmode_name[now_mode]);
-    MW_printf("moving_situ : [%20s]\n",moving_situation_name[now_moving_situation]);
-    MW_printf("arm_mecha_target : [%1d]\n",arm_mecha_target);
-
-    MW_printf("Encoder_target[%3d]\n",mun_sus_target);
-    if(_IS_PRESSED_FIRST_UP_LIMITSW()){
-      MW_printf("FirstUpMecha_UP_SW[ ON]\n");
-    }else{
-      MW_printf("FirstUpMecha_UP_SW[OFF]\n");
-    }
-    if(_IS_PRESSED_FIRST_UNDER_LIMITSW()){
-      MW_printf("FirstUpMecha_UNDER_SW[ ON]\n");
-    }else{
-      MW_printf("FirstUpMecha_UNDER_SW[OFF]\n");
-    }
-    if(_IS_PRESSED_ZENEBA_LIMITSW()){
-      MW_printf("ZENEBA_SW[ ON]\n");
-    }else{
-      MW_printf("ZENEBA_SW[OFF]\n");
-    }
-    if(_IS_PRESSED_ARM_UNDER_LIMITSW()){
-      MW_printf("ARM_UNDER_SW[ ON]\n");
-    }else{
-      MW_printf("ARM_UNDER_SW[OFF]\n");
-    }
-    if(_IS_PRESSED_ARM_UP_LIMITSW()){
-      MW_printf("ARM_UP_SW[ ON]\n");
-    }else{
-      MW_printf("ARM_UP_SW[OFF]\n");
-    }
-    if(_IS_TEST_LIMITSW()){
-       MW_printf("TEST_SW[ ON]\n");
-    }else{
-      MW_printf("TEST_SW[OFF]\n");
-    }
+    if(game_zone==BLUE_ZONE){ MW_printf("ZONE[BLUE]\n"); }else{ MW_printf("ZONE[ RED]\n"); }
+    //MW_printf("moving_situ : [%20s]\n",moving_situation_name[now_moving_situation]);
+    //MW_printf("arm_mecha_target : [%1d]\n",arm_mecha_target);
+    //MW_printf("Encoder_target[%3d]\n",mun_sus_target);
+    
+    if(_IS_PRESSED_FIRST_UP_LIMITSW()){ MW_printf("UpMecha_UP_SW[ ON]\n"); }else{ MW_printf("UpMecha_UP_SW[OFF]\n"); }
+    if(_IS_PRESSED_FIRST_UNDER_LIMITSW()){ MW_printf("UpMecha_UNDER_SW[ ON]\n"); }else{ MW_printf("UpMecha_UNDER_SW[OFF]\n"); }
+    if(_IS_PRESSED_ZENEBA_LIMITSW()){ MW_printf("ZENEBA_SW[ ON]\n"); }else{ MW_printf("ZENEBA_SW[OFF]\n"); }
+    if(_IS_PRESSED_ARM_UNDER_LIMITSW()){ MW_printf("ARM_UNDER_SW[ ON]\n"); }else{ MW_printf("ARM_UNDER_SW[OFF]\n"); }
+    if(_IS_PRESSED_ARM_UP_LIMITSW()){ MW_printf("ARM_UP_SW[ ON]\n"); }else{ MW_printf("ARM_UP_SW[OFF]\n"); }
+    if(PANEL_START_SW()){ MW_printf("START[ ON] "); }else{ MW_printf("START[OFF] "); }
+    if(PANEL_RIGHT_SW()){ MW_printf("RIGHT[ ON] "); }else{ MW_printf("RIGHT[OFF] "); }
+    if(PANEL_LEFT_SW()){ MW_printf("LEFT[ ON] "); }else{ MW_printf("LEFT[OFF] "); }
+    if(PANEL_RECET_SW()){ MW_printf("RECET[ ON] "); }else{ MW_printf("RECET[OFF] "); }
+    if(PANEL_ZONE_SW()){ MW_printf("ZONE[BLUE]\n"); }else{ MW_printf("ZONE[ RED]\n"); }
     
     /* if(encoder1_reset){ */
     /*   MW_printf("encoder1_reset[true ]\n"); */
@@ -1982,6 +2023,7 @@ GetObject_t get_object(ArmMechaTarget_t end_position, bool get_hasami, bool get_
   if(recet == 1){
     arm_mecha_mode = ARM_SPIN_NOW;
     zeneba_mecha_mode = ZENEBA_SPIN_NOW;
+    arm_mecha_move(GET_CLIP, 1);
     mode_count = 0;
     return GETTING_RECET;
   }

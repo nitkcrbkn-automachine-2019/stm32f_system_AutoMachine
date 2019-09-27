@@ -22,8 +22,8 @@
 #include "MW_IWDG.h"
 
 volatile uint32_t g_SY_system_counter;
-volatile uint8_t g_rc_data[RC_DATA_NUM];
-static uint8_t rc_rcv[RC_DATA_NUM];
+volatile uint8_t g_rc_data[RC_DATA_NUM] = {};
+static uint8_t rc_rcv[RC_DATA_NUM] = {};
 volatile led_mode_t g_led_mode = lmode_1;
 static volatile unsigned int count_for_rc = 0;
 
