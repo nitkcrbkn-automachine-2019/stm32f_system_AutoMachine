@@ -144,9 +144,9 @@ void DD_SSHandPrint(DD_SSHand_t *dmd){
 }
 
 int SS_Init(DD_SSHand_t *dmd){
-  int ret;
 
   switch(dmd->type){
+  case D_STYP_ENCODER:
   case D_STYP_SRF02:
   case D_STYP_GP2Y0A710K:
   case D_STYP_PHOTOARRAY:
@@ -167,6 +167,7 @@ int DD_SSPutReceiveRequest(uint8_t num){
     return -1;
   }
   RingBuf[WritePoint] = num;
+  //RingBuf[WritePoint] = num;
   WritePoint = next;
   return 0;
 }
@@ -174,6 +175,7 @@ int DD_SSPutReceiveRequest(uint8_t num){
 int DD_SSPullReceiveRequest(uint8_t *num){
   if(ReadPoint != WritePoint){
     *num = RingBuf[ReadPoint];
+    //*num = RingBuf[ReadPoint];
     ReadPoint = (ReadPoint + 1) % RINGSIZE;
   }
   return 0;

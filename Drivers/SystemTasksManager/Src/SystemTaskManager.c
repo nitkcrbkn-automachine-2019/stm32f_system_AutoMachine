@@ -333,16 +333,16 @@ void SY_GPIOInit(void){
   MW_GPIOInit(GPIOAID);
 
   /*Configure GPIO pin : PC4 */
-  MW_SetGPIOPin(GPIO_PIN_4);
-  MW_SetGPIOMode(GPIO_MODE_IT_RISING);
-  MW_SetGPIOPull(GPIO_NOPULL);
-  MW_GPIOInit(GPIOCID);
+  /* MW_SetGPIOPin(GPIO_PIN_4); */
+  /* MW_SetGPIOMode(GPIO_MODE_IT_RISING); */
+  /* MW_SetGPIOPull(GPIO_NOPULL); */
+  /* MW_GPIOInit(GPIOCID); */
 
-  MW_SetGPIOPin(GPIO_PIN_4);
-  MW_SetGPIOMode(GPIO_MODE_OUTPUT_PP);
-  MW_SetGPIOSpeed(GPIO_SPEED_FREQ_LOW);
-  MW_GPIOInit(GPIOCID);
-  MW_GPIOWrite(GPIOCID,GPIO_PIN_4,GPIO_PIN_RESET);
+  /* MW_SetGPIOPin(GPIO_PIN_4); */
+  /* MW_SetGPIOMode(GPIO_MODE_OUTPUT_PP); */
+  /* MW_SetGPIOSpeed(GPIO_SPEED_FREQ_LOW); */
+  /* MW_GPIOInit(GPIOCID); */
+  /* MW_GPIOWrite(GPIOCID,GPIO_PIN_4,GPIO_PIN_RESET); */
   
   /*Configure GPIO pin Output Level */
   MW_GPIOWrite(GPIOAID, GPIO_PIN_5, 0);
