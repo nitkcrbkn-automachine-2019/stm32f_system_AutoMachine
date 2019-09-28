@@ -16,7 +16,7 @@ int appInit(void);
 #define DD_USE_ENCODER2 1
 #define DD_NUM_OF_SV 0
 
-#define DD_USE_RC 0
+#define DD_USE_RC 1
 
 #include "DD_RC.h"
 #include "DD_LD.h"
@@ -127,7 +127,7 @@ int appInit(void);
 #define _SW_PANEL_RECET_GPIOPIN GPIO_PIN_8
 #define PANEL_RECET_SW() ((!MW_GPIORead(_SW_PANEL_RECET_GPIOxID,_SW_PANEL_RECET_GPIOPIN)))
 
-#define _SW_PANEL_ZONE_GPIOxID GPIOBID
+#define _SW_PANEL_ZONE_GPIOxID GPIOCID
 #define _SW_PANEL_ZONE_GPIOPIN GPIO_PIN_0
 #define PANEL_ZONE_SW() ((!MW_GPIORead(_SW_PANEL_ZONE_GPIOxID,_SW_PANEL_ZONE_GPIOPIN)))
 
@@ -180,6 +180,11 @@ typedef enum{
   SPIN_END = 5,
   OVER_SHOOT = 6,
 }MovingSituation_t;
+
+typedef enum{
+  TURN_NOW = 0,
+  TURN_END = 1,
+}TurnSituation_t;
 
 typedef enum{
   NOW_POSITION_RIGHT = 0,
