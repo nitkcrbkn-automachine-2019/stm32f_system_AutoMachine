@@ -784,7 +784,7 @@ int appTask(void){
 	  }
 	}
   	break;
-      case 1:
+      case 1://角度あわせ
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = 0.0;
@@ -837,12 +837,24 @@ int appTask(void){
   	    moving_count++;
   	  }
   	}
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_UP_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
   	break;
       case 2:
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_UP_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 230.0;
+  	  target_zahyou_1[0] = 190.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = -1750.0;
   	  target_zahyou_2[1] = position[1];//5700.0;
@@ -851,21 +863,27 @@ int appTask(void){
   	  }
   	  next_motion_recet_flag = false;
   	}else{
-	
-  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, false, true);
-  	  if(now_moving_situation == ARRIVED_TARGET){
-  	    next_motion_recet_flag = true;
-  	    moving_count++;
+
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, false, true);
+  	  }else{
+	    if(get_object_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_flag = false;
+	    }
   	  }
   	}
       	break;
       case 3:
+	break;
+      case 4://シーつポジションへ直進
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = 5700.0;
+  	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
-  	  target_zahyou_2[1] = 6200.0;
+  	  target_zahyou_2[1] = 6400.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
   	  }
@@ -878,11 +896,11 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 4:
+      case 5://si-tuポジションから後退
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = 6200.0;
+  	  target_zahyou_1[1] = 6400.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
   	  target_zahyou_2[1] = 5700.0;
   	  for(i=0; i<8; i++){
@@ -897,13 +915,13 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 5:
+      case 6://洗濯バサミかけるポジションへ直進
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = 5700.0;
+  	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
-  	  target_zahyou_2[1] = 6100.0;
+  	  target_zahyou_2[1] = 6300.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
   	  }
@@ -916,15 +934,15 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 6:
+      case 7:
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
-  	  if(next_motion_delay_count>=100){
+  	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	    target_zahyou_1[0] = -1750.0;
-  	    target_zahyou_1[1] = position[1]+50;//6100.0;
+  	    target_zahyou_1[1] = position[1]+50;//6300.0;
   	    target_zahyou_2[0] = -3450.0;
-  	    target_zahyou_2[1] = position[1]+50;//6100.0;
+  	    target_zahyou_2[1] = position[1]+50;//6300.0;
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
   	    }
