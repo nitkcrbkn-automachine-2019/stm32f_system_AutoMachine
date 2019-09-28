@@ -352,6 +352,8 @@ int appTask(void){
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
+      arm_mecha_mode = ARM_SPIN_NOW;
+      get_object_flag = false;
 
       sheets_flag = false;
       towel_1_flag = false;
@@ -778,7 +780,7 @@ int appTask(void){
   	}
 
 	if(!get_object_flag){
-	  get_object_mode = get_object(SET_UP_POSI, 1, false, false, false, 0);
+	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
 	  if(get_object_mode == GETTING_END){
 	    get_object_flag = true;
 	  }
@@ -838,7 +840,7 @@ int appTask(void){
   	  }
   	}
 	if(!get_object_flag){
-	  get_object_mode = get_object(SET_UP_POSI, 1, false, false, false, 0);
+	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
 	  if(get_object_mode == GETTING_END){
 	    get_object_flag = true;
 	  }
@@ -846,7 +848,7 @@ int appTask(void){
   	break;
       case 2:
 	if(!get_object_flag){
-	  get_object_mode = get_object(SET_UP_POSI, 1, false, false, false, 0);
+	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
 	  if(get_object_mode == GETTING_END){
 	    get_object_flag = true;
 	  }
@@ -862,6 +864,7 @@ int appTask(void){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
   	  }
   	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
   	}else{
 
 	  if(now_moving_situation != ARRIVED_TARGET){
@@ -875,7 +878,14 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 3:
+      case 3://upポジからreleaseポジへ下げる
+	if(arm_mecha_mode != ARM_SPIN_END){
+	  arm_mecha_mode = arm_mecha_move(SET_RELEASE_POSI, 0);
+	}else{
+	  next_motion_recet_flag = true;
+	  moving_count++;
+	  arm_mecha_mode = ARM_SPIN_NOW;
+	}
 	break;
       case 4://シーつポジションへ直進
   	if(next_motion_recet_flag){
@@ -888,11 +898,18 @@ int appTask(void){
   	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
   	  }
   	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
   	}else{
-  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
-  	  if(now_moving_situation == ARRIVED_TARGET){
-  	    next_motion_recet_flag = true;
-  	    moving_count++;
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_RIGHT_ON;
+	    g_ab_h[0].dat |= AB_LEFT_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
   	  }
   	}
       	break;
@@ -908,14 +925,29 @@ int appTask(void){
   	  }
   	  next_motion_recet_flag = false;
   	}else{
-  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
-  	  if(now_moving_situation == ARRIVED_TARGET){
-  	    next_motion_recet_flag = true;
-  	    moving_count++;
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_CENTER_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
   	  }
   	}
       	break;
-      case 6://洗濯バサミかけるポジションへ直進
+      case 6://洗濯バサミゲット
+	if(!get_object_flag){
+	  get_object_mode = get_object(GET_CLIP, -1, true, true, true, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = false;
+	    next_motion_recet_flag = true;
+	    moving_count++;
+	  }
+	}
+	break;
+      case 7://洗濯バサミかけるポジションへ直進
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1650.0;
@@ -934,7 +966,16 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 7:
+      case 8://arm下げて洗濯バサミつける
+	if(arm_mecha_mode != ARM_SPIN_END){
+	  arm_mecha_mode = arm_mecha_move(SET_CLIP_POSI, 0);
+	}else{
+	  next_motion_recet_flag = true;
+	  moving_count++;
+	  arm_mecha_mode = ARM_SPIN_NOW;
+	}
+	break;
+      case 9://選択バサミ持ちながら横移動
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
@@ -950,13 +991,25 @@ int appTask(void){
   	    next_motion_recet_flag = false;
   	  }
   	}else{
-  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, false, true);
+  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, false, true);
   	  if(now_moving_situation == ARRIVED_TARGET){
   	    next_motion_recet_flag = true;
   	    moving_count++;
   	  }
   	}
       	break;
+      case 10:
+	g_ab_h[0].dat |= AB_RIGHT_ON;
+	g_ab_h[0].dat |= AB_LEFT_ON;
+	g_ab_h[0].dat |= AB_CENTER_ON;
+	if(arm_mecha_mode != ARM_SPIN_END){
+	  arm_mecha_mode = arm_mecha_move(SET_RELEASE_POSI, 0);
+	}else{
+	  next_motion_recet_flag = true;
+	  moving_count++;
+	  arm_mecha_mode = ARM_SPIN_NOW;
+	}
+	break;
       }
       //now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
       //now_moving_situation = go_to_target_2(target_zahyou_1, target_zahyou_2, 3500.0, true, true);
@@ -2237,9 +2290,14 @@ GetObject_t get_object(ArmMechaTarget_t end_position, int zeneba_destination, bo
       zeneba_mecha_mode = zeneba_mecha_move(zeneba_destination,0);
       return_value = GETTING_NOW;
     }else{
-      g_ab_h[0].dat &= AB_RIGHT_OFF;
-      g_ab_h[0].dat &= AB_LEFT_OFF;
-      g_ab_h[0].dat &= AB_CENTER_OFF;
+      if(get_hasami){
+	if(get_hasami_right) g_ab_h[0].dat &= AB_RIGHT_OFF;
+	if(get_hasami_left) g_ab_h[0].dat &= AB_LEFT_OFF;
+      }else{
+	g_ab_h[0].dat &= AB_RIGHT_OFF;
+	g_ab_h[0].dat &= AB_LEFT_OFF;
+	g_ab_h[0].dat &= AB_CENTER_OFF;
+      }
       zeneba_mecha_mode = ZENEBA_SPIN_NOW;
       arm_mecha_mode = ARM_SPIN_NOW;
       return_value = GETTING_END;
@@ -2710,6 +2768,10 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
   int32_t encoder_diff[4];
   int i,j;
   int32_t bug_duty = 0;
+  static bool encoder_bug_right = false;
+  static bool encoder_bug_back = false;
+  static bool encoder_bug_left = false;
+  static bool encoder_bug_front = false;
   static bool encoder_bug = false;
 
   if(recet==1){
@@ -2783,31 +2845,49 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
     for(i=0;i<4;i++){
       encoder_diff[i] = I2C_Encoder(i,GET_DIFF, bug_duty, &encoder_bug);
     }
+    if(encoder_bug){
+      for(i=0; i<4; i++){
+	encoder_diff[i] = 0;
+      }
+      encoder_bug = false;
+    }
   }else{
     switch(destination){
     case PLUS_Y:
     case MINUS_Y:
-      encoder_diff[0] = I2C_Encoder(0,GET_DIFF, bug_duty, &encoder_bug);
-      encoder_diff[1] = I2C_Encoder(1,GET_DIFF, 0, &encoder_bug);
-      encoder_diff[2] = I2C_Encoder(2,GET_DIFF, bug_duty, &encoder_bug);
-      encoder_diff[3] = I2C_Encoder(3,GET_DIFF, 0, &encoder_bug);
+      encoder_diff[0] = I2C_Encoder(0,GET_DIFF, bug_duty, &encoder_bug_right);
+      encoder_diff[1] = I2C_Encoder(1,GET_DIFF, 0, &encoder_bug_back);
+      encoder_diff[2] = I2C_Encoder(2,GET_DIFF, bug_duty, &encoder_bug_left);
+      encoder_diff[3] = I2C_Encoder(3,GET_DIFF, 0, &encoder_bug_front);
+      if(encoder_bug_back || encoder_bug_front){
+	encoder_diff[1] = 0;
+	encoder_diff[3] = 0;
+      }
+      if(encoder_bug_right && !encoder_bug_left){
+	encoder_diff[0] = encoder_diff[2];
+      }else if(!encoder_bug_right && encoder_bug_left){
+	encoder_diff[2] = encoder_diff[0];
+      }
       break;
     case PLUS_X:
     case MINUS_X:
-      encoder_diff[0] = I2C_Encoder(0,GET_DIFF, 0, &encoder_bug);
-      encoder_diff[1] = I2C_Encoder(1,GET_DIFF, bug_duty, &encoder_bug);
-      encoder_diff[2] = I2C_Encoder(2,GET_DIFF, 0, &encoder_bug);
-      encoder_diff[3] = I2C_Encoder(3,GET_DIFF, bug_duty, &encoder_bug);
+      encoder_diff[0] = I2C_Encoder(0,GET_DIFF, 0, &encoder_bug_right);
+      encoder_diff[1] = I2C_Encoder(1,GET_DIFF, bug_duty, &encoder_bug_back);
+      encoder_diff[2] = I2C_Encoder(2,GET_DIFF, 0, &encoder_bug_left);
+      encoder_diff[3] = I2C_Encoder(3,GET_DIFF, bug_duty, &encoder_bug_front);
+      if(encoder_bug_left || encoder_bug_right){
+	encoder_diff[0] = 0;
+	encoder_diff[2] = 0;
+      }
+      if(encoder_bug_front && !encoder_bug_back){
+	encoder_diff[3] = encoder_diff[1];
+      }else if(!encoder_bug_front && encoder_bug_back){
+	encoder_diff[1] = encoder_diff[3];
+      }
       break;
     }
   }
 
-  if(encoder_bug){
-    for(i=0; i<4; i++){
-      encoder_diff[i] = 0;
-    }
-    encoder_bug = false;
-  }
   
   for(i=0;i<3;i++){
     temp_position[i] = 0.0;
