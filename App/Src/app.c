@@ -41,7 +41,7 @@ int steering_2_init(void);
 static
 int get_diff(int target,int now_degree,int encoder_ppr);
 static
-int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3], bool cons_destination, MovingDestination_t destination);
+int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3], bool cons_destination, MovingDestination_t destination, bool *error);
 /* static */
 /* int odmetry_position_recent(double position[MOVE_SAMPLE_VALUE][3], int recet); */
 static
@@ -176,6 +176,7 @@ int appTask(void){
 
   static TurnSituation_t turn_situation = TURN_NOW;
   bool testes;
+  bool to_error_flag;
   /*************/
   
   if(!__RC_ISPRESSED_CIRCLE(g_rc_data)) circle_flag = true;
@@ -311,7 +312,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -329,7 +330,7 @@ int appTask(void){
       switch(moving_count){
       case 0://シーツかけるところの基準線まで移動
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
@@ -356,7 +357,7 @@ int appTask(void){
   	break;
       case 1://角度あわせ
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = 2000.0;
@@ -407,7 +408,7 @@ int appTask(void){
   	    odmetry_func_data[0] = 200.0;
   	    odmetry_func_data[1] = 5700.0;
   	    odmetry_func_data[2] = 0.0;
-  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X);
+  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
   	    next_motion_recet_flag = true;
   	    moving_count++;
   	  }
@@ -427,7 +428,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
@@ -462,7 +463,7 @@ int appTask(void){
 	break;
       case 4://シーつポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 5700.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -488,7 +489,7 @@ int appTask(void){
       	break;
       case 5://si-tuポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 6400.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -524,11 +525,11 @@ int appTask(void){
 	break;
       case 7://洗濯バサミかけるポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
-  	  target_zahyou_2[1] = 6300.0;
+  	  target_zahyou_2[1] = 6200.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
   	  }
@@ -545,12 +546,13 @@ int appTask(void){
 	if(arm_mecha_mode != ARM_SPIN_END){
 	  arm_mecha_mode = arm_mecha_move(SET_CLIP_POSI, 0);
 	}else{
+	  g_ab_h[0].dat |= AB_RIGHT_ON;
 	  next_motion_recet_flag = true;
 	  moving_count++;
 	  arm_mecha_mode = ARM_SPIN_NOW;
 	}
 	break;
-      case 9:
+      case 9://armちょっとあげる
 	if(next_motion_recet_flag){
 	  adjust_timecount = g_SY_system_counter;
 	  next_motion_recet_flag = false;
@@ -571,11 +573,11 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
-  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	    target_zahyou_1[0] = -1750.0;
-  	    target_zahyou_1[1] = position[1]+50;//6300.0;
+  	    target_zahyou_1[1] = position[1]+50;//6200.0;
   	    target_zahyou_2[0] = -3450.0;
-  	    target_zahyou_2[1] = position[1]+50;//6300.0;
+  	    target_zahyou_2[1] = position[1]+50;//6200.0;
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
   	    }
@@ -611,7 +613,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -629,7 +631,7 @@ int appTask(void){
       switch(moving_count){
       case 0: //タオルかけるところの基準線まで移動
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
@@ -656,7 +658,7 @@ int appTask(void){
   	break;
       case 1: //角度あわせ
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = 2000.0;
@@ -706,7 +708,7 @@ int appTask(void){
   	    odmetry_func_data[0] = 200.0;
   	    odmetry_func_data[1] = 3700.0;
   	    odmetry_func_data[2] = 0.0;
-  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X);
+  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
   	    next_motion_recet_flag = true;
   	    moving_count++;
   	  }
@@ -726,7 +728,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;//230.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
@@ -752,7 +754,7 @@ int appTask(void){
       	break;
       case 3: //一枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
   	  target_zahyou_1[1] = 3700.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
@@ -778,7 +780,7 @@ int appTask(void){
       	break;
       case 4://一枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
@@ -809,7 +811,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -1750.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
@@ -835,7 +837,7 @@ int appTask(void){
       	break;
       case 6://2枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
   	  target_zahyou_1[1] = position[1];
   	  target_zahyou_2[0] = position[0];//-2550.0;
@@ -861,7 +863,7 @@ int appTask(void){
       	break;
       case 7://2枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-2550.0;
@@ -892,7 +894,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -2550.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
@@ -917,7 +919,7 @@ int appTask(void){
       	break;
       case 9://3枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
   	  target_zahyou_1[1] = position[1];
   	  target_zahyou_2[0] = position[0];//-3250.0;
@@ -943,7 +945,7 @@ int appTask(void){
       	break;
       case 10://3枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-3250.0;
@@ -970,7 +972,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=100){
-  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	    target_zahyou_1[0] = -3300;//-3250.0;
   	    target_zahyou_1[1] = position[1];//6100.0;
   	    target_zahyou_2[0] = 0.0;
@@ -991,7 +993,7 @@ int appTask(void){
       	break;
       case 12:
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 3900.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -1017,7 +1019,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -1040,7 +1042,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -1063,7 +1065,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -1086,7 +1088,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       next_motion_delay_count=0;
       destination_adjust_timecount = 0;
       next_motion_recet_flag = true;
@@ -1149,7 +1151,7 @@ int appTask(void){
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+      ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
       //ret = odmetry_position_recent(recent_position,1);
     }
     if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){
@@ -1196,7 +1198,7 @@ int appTask(void){
       switch(moving_count){
       case 0: //タオルかけるところの基準線まで移動
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
@@ -1223,7 +1225,7 @@ int appTask(void){
   	break;
       case 1: //角度あわせ
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = 2000.0;
@@ -1273,7 +1275,7 @@ int appTask(void){
   	    odmetry_func_data[0] = 200.0;
   	    odmetry_func_data[1] = 3700.0;
   	    odmetry_func_data[2] = 0.0;
-  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X);
+  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
   	    next_motion_recet_flag = true;
   	    moving_count++;
   	  }
@@ -1293,7 +1295,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;//230.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
@@ -1319,7 +1321,7 @@ int appTask(void){
       	break;
       case 3: //一枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
   	  target_zahyou_1[1] = 3700.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
@@ -1345,7 +1347,7 @@ int appTask(void){
       	break;
       case 4://一枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
@@ -1376,7 +1378,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -1750.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
@@ -1402,7 +1404,7 @@ int appTask(void){
       	break;
       case 6://2枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
   	  target_zahyou_1[1] = position[1];
   	  target_zahyou_2[0] = position[0];//-2550.0;
@@ -1428,7 +1430,7 @@ int appTask(void){
       	break;
       case 7://2枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-2550.0;
@@ -1459,7 +1461,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -2550.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
@@ -1484,7 +1486,7 @@ int appTask(void){
       	break;
       case 9://3枚目ポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
   	  target_zahyou_1[1] = position[1];
   	  target_zahyou_2[0] = position[0];//-3250.0;
@@ -1510,7 +1512,7 @@ int appTask(void){
       	break;
       case 10://3枚目ポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
   	  target_zahyou_1[1] = 4400.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-3250.0;
@@ -1537,7 +1539,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=100){
-  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	    target_zahyou_1[0] = -3300;//-3250.0;
   	    target_zahyou_1[1] = position[1];//6100.0;
   	    target_zahyou_2[0] = 0.0;
@@ -1558,7 +1560,7 @@ int appTask(void){
       	break;
       case 12:
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 3900.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -1584,7 +1586,7 @@ int appTask(void){
       switch(moving_count){
       case 0://シーツかけるところの基準線まで移動
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
@@ -1611,7 +1613,7 @@ int appTask(void){
   	break;
       case 1://角度あわせ
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = 2000.0;
@@ -1662,7 +1664,7 @@ int appTask(void){
   	    odmetry_func_data[0] = 200.0;
   	    odmetry_func_data[1] = 5700.0;
   	    odmetry_func_data[2] = 0.0;
-  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X);
+  	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
   	    next_motion_recet_flag = true;
   	    moving_count++;
   	  }
@@ -1682,7 +1684,7 @@ int appTask(void){
 	  }
 	}
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
@@ -1717,7 +1719,7 @@ int appTask(void){
 	break;
       case 4://シーつポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = position[1];//5700.0
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -1743,7 +1745,7 @@ int appTask(void){
       	break;
       case 5://si-tuポジションから後退
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 6400.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -1777,7 +1779,7 @@ int appTask(void){
 	break;
       case 7://洗濯バサミかけるポジションへ直進
   	if(next_motion_recet_flag){
-  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = position[0];//-1650.0;
@@ -1807,7 +1809,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
-  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	    target_zahyou_1[0] = -1750.0;
   	    target_zahyou_1[1] = position[1]+50;//6300.0;
   	    target_zahyou_2[0] = -3450.0;
@@ -1994,7 +1996,7 @@ int appTask(void){
   }
 
   if(now_mode == MANUAL_SUSPENSION){
-    ret = odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
+    ret = odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
     if(ret){
       return ret;
     }
@@ -2006,7 +2008,7 @@ int appTask(void){
     I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
     I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
     I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-    ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X);
+    ret = odmetry_position(position,1,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
     //ret = odmetry_position_recent(recent_position,1);
   }
 
@@ -2058,6 +2060,11 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
   static bool first_flag = false;
   static bool over_shoot = false;
   bool odmetry_func[3];
+  static bool error_flag = false;
+  static bool error_wait_flag = false;
+  static int32_t error_wait = 0;
+  int error = 0;
+  bool testes;
   
   if((recent_zahyou_1[0]!=zahyou_1[0]) || (recent_zahyou_1[1]!=zahyou_1[1]) || (recent_zahyou_2[0]!=zahyou_2[0]) || (recent_zahyou_2[1]!=zahyou_2[1])){
     over_shoot = false;
@@ -2145,230 +2152,79 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       break;
     }
     
-    odmetry_position(position,0,false,odmetry_func,position,true,mode);
-    /* if(situation == ARRIVED_TARGET){ */
-      
-    /*   switch(mode){ */
-    /*   case PLUS_Y: */
-    /* 	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	  over_shoot = true; */
-    /* 	  over_shoot_mode = MINUS_Y; */
-    /* 	} */
-    /* 	break; */
-    /*   case MINUS_Y: */
-    /* 	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	  over_shoot = true; */
-    /* 	  over_shoot_mode = PLUS_Y; */
-    /* 	} */
-    /* 	break; */
-    /*   case PLUS_X: */
-    /* 	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	  over_shoot = true; */
-    /* 	  over_shoot_mode = MINUS_X; */
-    /* 	} */
-    /* 	break; */
-    /*   case MINUS_X: */
-    /* 	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	  over_shoot = true; */
-    /* 	  over_shoot_mode = PLUS_X; */
-    /* 	} */
-    /* 	break; */
-    /*   } */
-      
-    /*   if(over_shoot){ */
+    error = odmetry_position(position,0,false,odmetry_func,position,true,mode,&error_flag);
 
-    /* 	straight_duty = SUS_LOW_DUTY; */
-	
-    /* 	right_duty = straight_duty;  */
-    /* 	left_duty = straight_duty;  */
-    /* 	if(right_duty < 0.0) right_duty = 0.0; */
-    /* 	if(left_duty < 0.0) left_duty = 0.0; */
-    /* 	if(right_duty > 9999.0) right_duty = 9999.0; */
-    /* 	if(left_duty > 9999.0) left_duty = 9999.0; */
-
-    /* 	switch(over_shoot_mode){ */
-    /* 	case PLUS_Y: */
-    /* 	case MINUS_X: */
-    /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD; */
-    /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD; */
-    /* 	  g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST); */
-    /* 	  g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST); */
-    /* 	  break; */
-    /* 	case PLUS_X: */
-    /* 	case MINUS_Y: */
-    /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD; */
-    /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
-    /* 	  g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST); */
-    /* 	  g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST); */
-    /* 	} */
-
-    /* 	switch(over_shoot_mode){ */
-    /* 	case PLUS_Y: */
-    /* 	case MINUS_Y: */
-    /* 	  if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	    over_shoot_situation = OVER_SHOOT; */
-    /* 	  }else{ */
-    /* 	    over_shoot_situation = ARRIVED_TARGET; */
-    /* 	  } */
-    /* 	  break; */
-    /* 	case PLUS_X: */
-    /* 	case MINUS_X: */
-    /* 	  if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-    /* 	    over_shoot_situation = OVER_SHOOT; */
-    /* 	  }else{ */
-    /* 	    over_shoot_situation = ARRIVED_TARGET; */
-    /* 	  } */
-    /* 	  break; */
-    /* 	} */
-	
-    /* 	if(over_shoot_situation == ARRIVED_TARGET){ */
-    /* 	  situation = ARRIVED_TARGET; */
-    /* 	  over_shoot = false; */
-    /* 	  g_md_h[R_F_KUDO_MD].duty = 0; */
-    /* 	  g_md_h[L_B_KUDO_MD].duty = 0; */
-    /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE; */
-    /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE; */
-    /* 	}else{ */
-    /* 	  over_shoot_situation = OVER_SHOOT; */
-    /* 	  return over_shoot_situation; */
-    /* 	} */
-    /*   }else{ */
-    /* 	g_md_h[R_F_KUDO_MD].duty = 0; */
-    /* 	g_md_h[L_B_KUDO_MD].duty = 0; */
-    /* 	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE; */
-    /* 	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE; */
-    /*   } */
-    /* }else{ */
-    /* if(!over_shoot){ */
-    situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
-    decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
-    
-    right_duty = straight_duty + right_duty_adjust;
-    left_duty = straight_duty + left_duty_adjust;
-    if(right_duty < 0.0) right_duty = 0.0;
-    if(left_duty < 0.0) left_duty = 0.0;
-    if(right_duty > 9999.0) right_duty = 9999.0;
-    if(left_duty > 9999.0) left_duty = 9999.0;
-    
-    
-    switch(mode){
-    case PLUS_Y:
-    case MINUS_X:
-      g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
-      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
-      g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
-      g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
-      break;
-    case PLUS_X:
-    case MINUS_Y:
-      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
-      g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
-      g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
-      g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
-      break;
+    if(error_flag || error == -1){
+      error_wait_flag = true;
+      error_wait = g_SY_system_counter;
     }
-    /* } */
 
-    if(situation == ARRIVED_TARGET ){ /* || over_shoot){ */
-      
-      /* switch(mode){ */
-      /* case PLUS_Y: */
-      /* 	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	  over_shoot = true; */
-      /* 	  over_shoot_mode = MINUS_Y; */
-      /* 	} */
-      /* 	break; */
-      /* case MINUS_Y: */
-      /* 	if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	  over_shoot = true; */
-      /* 	  over_shoot_mode = PLUS_Y; */
-      /* 	} */
-      /* 	break; */
-      /* case PLUS_X: */
-      /* 	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	  over_shoot = true; */
-      /* 	  over_shoot_mode = MINUS_X; */
-      /* 	} */
-      /* 	break; */
-      /* case MINUS_X: */
-      /* 	if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	  over_shoot = true; */
-      /* 	  over_shoot_mode = PLUS_X; */
-      /* 	} */
-      /* 	break; */
+    if(!error_wait_flag){
+      situation = decide_straight_duty(&straight_duty, zahyou_1, zahyou_2, position, max_duty, acceleration, mode);
+      decide_turn_duty(&right_duty_adjust, &left_duty_adjust, straight_duty, zahyou_1, zahyou_2, position, mode);
+    
+      right_duty = straight_duty + right_duty_adjust;
+      left_duty = straight_duty + left_duty_adjust;
+      if(right_duty < 0.0) right_duty = 0.0;
+      if(left_duty < 0.0) left_duty = 0.0;
+      if(right_duty > 9999.0) right_duty = 9999.0;
+      if(left_duty > 9999.0) left_duty = 9999.0;
+    
+    
+      switch(mode){
+      case PLUS_Y:
+      case MINUS_X:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+	g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+	break;
+      case PLUS_X:
+      case MINUS_Y:
+	g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST);
+	g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST);
+	break;
+      }
       /* } */
-      
-      /* if(over_shoot){ */
-
-      /* 	straight_duty = SUS_LOW_DUTY; */
-	
-      /* 	right_duty = straight_duty;  */
-      /* 	left_duty = straight_duty;  */
-      /* 	if(right_duty < 0.0) right_duty = 0.0; */
-      /* 	if(left_duty < 0.0) left_duty = 0.0; */
-      /* 	if(right_duty > 9999.0) right_duty = 9999.0; */
-      /* 	if(left_duty > 9999.0) left_duty = 9999.0; */
-
-      /* 	switch(over_shoot_mode){ */
-      /* 	case PLUS_Y: */
-      /* 	case MINUS_X: */
-      /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD; */
-      /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD; */
-      /* 	  g_md_h[R_F_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST); */
-      /* 	  g_md_h[L_B_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST); */
-      /* 	  break; */
-      /* 	case PLUS_X: */
-      /* 	case MINUS_Y: */
-      /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD; */
-      /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
-      /* 	  g_md_h[R_F_KUDO_MD].duty = (int)round((left_duty)*L_B_KUDO_ADJUST); */
-      /* 	  g_md_h[L_B_KUDO_MD].duty = (int)round((right_duty)*R_F_KUDO_ADJUST); */
-      /* 	  break; */
-      /* 	} */
-
-      /* 	switch(over_shoot_mode){ */
-      /* 	case PLUS_Y: */
-      /* 	case MINUS_Y: */
-      /* 	  if(fabs(position[0][1]-zahyou_2[1]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	    over_shoot_situation = OVER_SHOOT; */
-      /* 	  }else{ */
-      /* 	    over_shoot_situation = ARRIVED_TARGET; */
-      /* 	  } */
-      /* 	  break; */
-      /* 	case PLUS_X: */
-      /* 	case MINUS_X: */
-      /* 	  if(fabs(position[0][0]-zahyou_2[0]) > MOVE_ACCEPTABLE_WIDTH){ */
-      /* 	    over_shoot_situation = OVER_SHOOT; */
-      /* 	  }else{ */
-      /* 	    over_shoot_situation = ARRIVED_TARGET; */
-      /* 	  } */
-      /* 	  break; */
-      /* 	} */
-	
-      /* 	if(over_shoot_situation == ARRIVED_TARGET){ */
-      /* 	  situation = ARRIVED_TARGET; */
-      /* 	  over_shoot = false; */
-      /* 	  g_md_h[R_F_KUDO_MD].duty = 0; */
-      /* 	  g_md_h[L_B_KUDO_MD].duty = 0; */
-      /* 	  g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE; */
-      /* 	  g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE; */
-      /* 	}else{ */
-      /* 	  over_shoot_situation = OVER_SHOOT; */
-      /* 	  return over_shoot_situation; */
-      /* 	} */
-      /* }else{ */
+    }else{
+      I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
+      I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+      I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+      I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+      g_md_h[R_F_KUDO_MD].duty = 0;
+      g_md_h[L_B_KUDO_MD].duty = 0;
+      if((g_SY_system_counter-error_wait) > 2000){
+	error_wait_flag = false;
+	error_wait = 0;
+	error_flag = false;
+      }
+    }
+    
+    if(situation == ARRIVED_TARGET ){ /* || over_shoot){ */
       g_md_h[R_F_KUDO_MD].duty = 0;
       g_md_h[L_B_KUDO_MD].duty = 0;
       g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
       g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
       /* } */
     }
-      
-    /* if(situation == ARRIVED_TARGET){ */
-    /*   over_shoot_situation = OVER_SHOOT; */
-    /*   return over_shoot_situation; */
-    /* } */
-    /* } */
+   
+  }
+
+  if( g_SY_system_counter % _MESSAGE_INTERVAL_MS < _INTERVAL_MS ){
+    if(error_wait_flag){
+      MW_printf("error_wait_flag:[true ]\n");
+    }else{
+      MW_printf("error_wait_flag:[false]\n");
+    }
+    if(error_flag){
+      MW_printf("error_flag:[true ]\n");
+    }else{
+      MW_printf("error_flag:[false]\n");
+    }
   }
   
   return situation;
@@ -3609,7 +3465,7 @@ int suspensionSystem(void){
 /* } */
 
 static
-int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3], bool cons_destination, MovingDestination_t destination){
+int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjust_xyz[3], double adjust_data[3], bool cons_destination, MovingDestination_t destination, bool *error){
   static bool matrix_init = false;
   const int encoder_ppr = (2048)*4;
   const int tire_diameter = 48;
@@ -3619,11 +3475,11 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
   int32_t encoder_diff[4];
   int i,j;
   int32_t bug_duty = 0;
-  static bool encoder_bug_right = false;
-  static bool encoder_bug_back = false;
-  static bool encoder_bug_left = false;
-  static bool encoder_bug_front = false;
-  static bool encoder_bug = false;
+  bool encoder_bug_right = false;
+  bool encoder_bug_back = false;
+  bool encoder_bug_left = false;
+  bool encoder_bug_front = false;
+  bool encoder_bug = false;
   bool testes;
 
   if(recet==1){
@@ -3711,23 +3567,31 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
       encoder_diff[1] = I2C_Encoder(1,GET_DIFF, 0, &encoder_bug_back);
       encoder_diff[2] = I2C_Encoder(2,GET_DIFF, bug_duty, &encoder_bug_left);
       encoder_diff[3] = I2C_Encoder(3,GET_DIFF, 0, &encoder_bug_front);
-      if(encoder_bug_back || encoder_bug_front){
-	encoder_diff[1] = 0;
-	encoder_diff[3] = 0;
-      }
-      if(encoder_bug_right && !encoder_bug_left){
-	encoder_diff[0] = encoder_diff[2];
-      }else if(!encoder_bug_right && encoder_bug_left){
-	encoder_diff[2] = encoder_diff[0];
-      }else if(encoder_bug_right && encoder_bug_left){
-	encoder_diff[0] = 0;
-	encoder_diff[2] = 0;
-      }
+
+      /* if(encoder_bug_back || encoder_bug_front){ */
+      /* 	encoder_diff[1] = 0; */
+      /* 	encoder_diff[3] = 0; */
+      /* } */
+      /* if(encoder_bug_right && !encoder_bug_left){ */
+      /* 	encoder_diff[0] = encoder_diff[2]; */
+      /* }else if(!encoder_bug_right && encoder_bug_left){ */
+      /* 	encoder_diff[2] = encoder_diff[0]; */
+      /* }else if(encoder_bug_right && encoder_bug_left){ */
+      /* 	encoder_diff[0] = 0; */
+      /* 	encoder_diff[2] = 0; */
+      /* } */
       if(encoder_bug_back) I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       if(encoder_bug_front) I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       if(encoder_bug_right) I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       if(encoder_bug_left) I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      
+      if(encoder_bug_right || encoder_bug_left || encoder_bug_front || encoder_bug_back){
+	encoder_diff[0] = 0;
+	encoder_diff[1] = 0;
+	encoder_diff[2] = 0;
+	encoder_diff[3] = 0;
+	error = true;
+	return -1;
+      }
       break;
     case PLUS_X:
     case MINUS_X:
@@ -3735,22 +3599,30 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
       encoder_diff[1] = I2C_Encoder(1,GET_DIFF, bug_duty, &encoder_bug_back);
       encoder_diff[2] = I2C_Encoder(2,GET_DIFF, 0, &encoder_bug_left);
       encoder_diff[3] = I2C_Encoder(3,GET_DIFF, bug_duty, &encoder_bug_front);
-      if(encoder_bug_left || encoder_bug_right){
+      if(encoder_bug_right || encoder_bug_left || encoder_bug_front || encoder_bug_back){
+	error = true;
 	encoder_diff[0] = 0;
-	encoder_diff[2] = 0;
-      }
-      if(encoder_bug_front && !encoder_bug_back){
-	encoder_diff[3] = -encoder_diff[1];
-      }else if(!encoder_bug_front && encoder_bug_back){
-	encoder_diff[1] = -encoder_diff[3];
-      }else if(encoder_bug_front && encoder_bug_back){
 	encoder_diff[1] = 0;
+	encoder_diff[2] = 0;
 	encoder_diff[3] = 0;
+	return -1;
       }
-      if(encoder_bug_back) I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      if(encoder_bug_front) I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      if(encoder_bug_right) I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
-      if(encoder_bug_left) I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+      /* if(encoder_bug_left || encoder_bug_right){ */
+      /* 	encoder_diff[0] = 0; */
+      /* 	encoder_diff[2] = 0; */
+      /* } */
+      /* if(encoder_bug_front && !encoder_bug_back){ */
+      /* 	encoder_diff[3] = -encoder_diff[1]; */
+      /* }else if(!encoder_bug_front && encoder_bug_back){ */
+      /* 	encoder_diff[1] = -encoder_diff[3]; */
+      /* }else if(encoder_bug_front && encoder_bug_back){ */
+      /* 	encoder_diff[1] = 0; */
+      /* 	encoder_diff[3] = 0; */
+      /* } */
+      /* if(encoder_bug_back) I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes); */
+      /* if(encoder_bug_front) I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes); */
+      /* if(encoder_bug_right) I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes); */
+      /* if(encoder_bug_left) I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes); */
       
       break;
     }
@@ -4027,7 +3899,7 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation, int duty, bool *e
 
   if(operation == GET_DIFF){
     if(duty >= 1500){
-      bug_compare_value = (int)( (((double)(duty)/6.5/*6.0*/)*(double)(g_SY_system_counter - recent_time[encoder_num])) );
+      bug_compare_value = (int)( (((double)(duty)/20.0/*7.0*/)*(double)(g_SY_system_counter - recent_time[encoder_num])) );
     }else{
       bug_compare_value = 300*(g_SY_system_counter - recent_time[encoder_num]);
     }
