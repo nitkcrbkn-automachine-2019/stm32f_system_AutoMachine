@@ -227,6 +227,8 @@ int appTask(void){
     }else{
       now_mode++;
     }
+    is_pressed_start_flag = false;
+    is_pressed_recet_flag = true;
     right_flag = false;
     p_right_flag = false;
   }
@@ -236,6 +238,8 @@ int appTask(void){
     }else{
       now_mode--;
     }
+    is_pressed_start_flag = false;
+    is_pressed_recet_flag = true;
     left_flag = false;
     p_left_flag = false;
   }
@@ -289,39 +293,39 @@ int appTask(void){
       }
     }
     break;///////////////////////////////////////////////////////
-  case AUTO_FIRSTMECHA_MOVE:
-    if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){
-      first_up_mecha_flag = true;
-      first_up_mecha_up = true;
-      first_up_mecha_down = false;
-    }else if(__RC_ISPRESSED_TRIANGLE(g_rc_data) && triangle_flag){
-      first_up_mecha_flag = true;
-      first_up_mecha_up = false;
-      first_up_mecha_down = true;
-    }
-    if(__RC_ISPRESSED_CROSS(g_rc_data)){
-      first_up_mecha_flag = false;
-      first_up_mecha_up = false;
-      first_up_mecha_down = false;
-    }
-    if(!first_up_mecha_flag){
-      first_up_mecha_flag = false;
-      first_up_mecha_up = false;
-      first_up_mecha_down = false;
-    }else{
-      if(first_up_mecha_up){
-  	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_UP);
-      }else if(first_up_mecha_down){
-  	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_DOWN);
-      }
-      if(first_up_mecha_situ == FIRST_UP_MECHA_STOP){
-  	first_up_mecha_flag = false;
-  	first_up_mecha_up = false;
-  	first_up_mecha_down = false;
-      }
-    }
+  /* case AUTO_FIRSTMECHA_MOVE: */
+  /*   if(__RC_ISPRESSED_CIRCLE(g_rc_data) && circle_flag){ */
+  /*     first_up_mecha_flag = true; */
+  /*     first_up_mecha_up = true; */
+  /*     first_up_mecha_down = false; */
+  /*   }else if(__RC_ISPRESSED_TRIANGLE(g_rc_data) && triangle_flag){ */
+  /*     first_up_mecha_flag = true; */
+  /*     first_up_mecha_up = false; */
+  /*     first_up_mecha_down = true; */
+  /*   } */
+  /*   if(__RC_ISPRESSED_CROSS(g_rc_data)){ */
+  /*     first_up_mecha_flag = false; */
+  /*     first_up_mecha_up = false; */
+  /*     first_up_mecha_down = false; */
+  /*   } */
+  /*   if(!first_up_mecha_flag){ */
+  /*     first_up_mecha_flag = false; */
+  /*     first_up_mecha_up = false; */
+  /*     first_up_mecha_down = false; */
+  /*   }else{ */
+  /*     if(first_up_mecha_up){ */
+  /* 	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_UP); */
+  /*     }else if(first_up_mecha_down){ */
+  /* 	first_up_mecha_situ = first_up_mecha_move(FIRST_UP_MECHA_DOWN); */
+  /*     } */
+  /*     if(first_up_mecha_situ == FIRST_UP_MECHA_STOP){ */
+  /* 	first_up_mecha_flag = false; */
+  /* 	first_up_mecha_up = false; */
+  /* 	first_up_mecha_down = false; */
+  /*     } */
+  /*   } */
     
-    break;/////////////////////////////////////////////////////////////////////////
+  /*   break;///////////////////////////////////////////////////////////////////////// */
   case AUTO_TEST:///////////////////////////////////////////////////////////////////////////////////////////////////////
     /* This is BLUE ZONE pro */
 
@@ -416,7 +420,7 @@ int appTask(void){
   	  destination_adjust_timecount = g_SY_system_counter;
   	}else{
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) < 2000){
+  	  if((g_SY_system_counter-destination_adjust_timecount) < 2300){
   	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
   	    /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
   	    /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
@@ -424,14 +428,14 @@ int appTask(void){
   	    /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
   	    /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
   	    /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3000){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3300){
   	    steering_spin_to_target(120+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(120+L_B_DEG_ADJUST,2);
   	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4000){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4300){
   	    steering_spin_to_target(60+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(60+L_B_DEG_ADJUST,2);
   	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
@@ -440,7 +444,11 @@ int appTask(void){
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
   	  }
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4000){
+  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4300){
+	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+  	    g_md_h[R_F_KUDO_MD].duty = 0;
+  	    g_md_h[L_B_KUDO_MD].duty = 0;
   	    now_moving_situation = SPIN_STEERING;
   	    destination_adjust_timecount = 0;
   	    sus_motor_stop();
@@ -472,7 +480,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 190.0;//230.0;
+  	  target_zahyou_1[0] = 180.0;//230.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = -1750.0;
   	  target_zahyou_2[1] = position[1];//5700.0;
@@ -498,7 +506,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1750.0;
-  	  target_zahyou_1[1] = position[1];//3700.0;
+  	  target_zahyou_1[1] = 3700.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
   	  target_zahyou_2[1] = 4400.0;
   	  for(i=0; i<8; i++){
@@ -557,7 +565,7 @@ int appTask(void){
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -1750.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
-  	  target_zahyou_2[0] = -2500.0;//-2550.0
+  	  target_zahyou_2[0] = -2450.0;//-2550.0
   	  target_zahyou_2[1] = position[1];//3700.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
@@ -640,7 +648,7 @@ int appTask(void){
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = -2550.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
-  	  target_zahyou_2[0] = -3250.0;//-3250.0;
+  	  target_zahyou_2[0] = -3150.0;//-3250.0;
   	  target_zahyou_2[1] = position[1];//3700.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
@@ -800,7 +808,7 @@ int appTask(void){
   	  destination_adjust_timecount = g_SY_system_counter;
   	}else{
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) < 2000){
+  	  if((g_SY_system_counter-destination_adjust_timecount) < 2300){
   	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
   	    /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
   	    /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
@@ -808,14 +816,15 @@ int appTask(void){
   	    /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
   	    /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
   	    /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3000){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3300){
+	    g_ab_h[0].dat |= AB_UPMECHA_ON; ///////////////////////////////////////////////
   	    steering_spin_to_target(120+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(120+L_B_DEG_ADJUST,2);
   	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4000){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4300){
   	    steering_spin_to_target(60+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(60+L_B_DEG_ADJUST,2);
   	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
@@ -824,7 +833,11 @@ int appTask(void){
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
   	  }
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4000){
+  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4300){
+	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
+  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
+  	    g_md_h[R_F_KUDO_MD].duty = 0;
+  	    g_md_h[L_B_KUDO_MD].duty = 0;
   	    now_moving_situation = SPIN_STEERING;
   	    destination_adjust_timecount = 0;
   	    sus_motor_stop();
@@ -846,7 +859,7 @@ int appTask(void){
 	  }
 	}
   	break;
-      case 2:
+      case 2://シーツポジションへ横移動
 	if(!get_object_flag){
 	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
 	  if(get_object_mode == GETTING_END){
@@ -855,8 +868,8 @@ int appTask(void){
 	}
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
-  	  g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 190.0;
+  	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
+  	  target_zahyou_1[0] = 180.0;
   	  target_zahyou_1[1] = position[1];//5700.0;
   	  target_zahyou_2[0] = -1750.0;
   	  target_zahyou_2[1] = position[1];//5700.0;
@@ -891,7 +904,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = position[1];//5700.0;
+  	  target_zahyou_1[1] = position[1];//5700.0
   	  target_zahyou_2[0] = position[0];//-1650.0;
   	  target_zahyou_2[1] = 6400.0;
   	  for(i=0; i<8; i++){
@@ -2867,6 +2880,9 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
 	encoder_diff[0] = encoder_diff[2];
       }else if(!encoder_bug_right && encoder_bug_left){
 	encoder_diff[2] = encoder_diff[0];
+      }else if(encoder_bug_right && encoder_bug_left){
+	encoder_diff[0] = 0;
+	encoder_diff[2] = 0;
       }
       break;
     case PLUS_X:
@@ -2880,15 +2896,17 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
 	encoder_diff[2] = 0;
       }
       if(encoder_bug_front && !encoder_bug_back){
-	encoder_diff[3] = encoder_diff[1];
+	encoder_diff[3] = -encoder_diff[1];
       }else if(!encoder_bug_front && encoder_bug_back){
-	encoder_diff[1] = encoder_diff[3];
+	encoder_diff[1] = -encoder_diff[3];
+      }else if(encoder_bug_front && encoder_bug_back){
+	encoder_diff[1] = 0;
+	encoder_diff[3] = 0;
       }
       break;
     }
   }
 
-  
   for(i=0;i<3;i++){
     temp_position[i] = 0.0;
     for(j=0;j<4;j++){
