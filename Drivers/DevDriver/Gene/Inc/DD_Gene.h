@@ -31,7 +31,7 @@ extern DD_LDHand_t g_ld_h[DD_NUM_OF_LD];
 extern DD_ABHand_t g_ab_h[DD_NUM_OF_AB];
 #endif
 #if DD_NUM_OF_SS
-extern DD_SSHand_t g_ss_h[DD_NUM_OF_SS];
+extern volatile DD_SSHand_t g_ss_h[DD_NUM_OF_SS];
 #endif
 #if DD_NUM_OF_SV
 extern DD_SV_t g_sv_h;

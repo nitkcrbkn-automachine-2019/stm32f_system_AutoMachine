@@ -8,7 +8,7 @@
 #include "constManager.h"
 
 static volatile int is_not_avaiable = 8+1;
-static volatile uint8_t correct[RC_DATA_NUM];
+static volatile uint8_t correct[RC_DATA_NUM] = {};
 
 #define _RELANGE(x) (x<DD_RC_ANALOG_MAX?(x>-DD_RC_ANALOG_MAX?x:-DD_RC_ANALOG_MAX):DD_RC_ANALOG_MAX)
 
@@ -45,7 +45,7 @@ int DD_RCInit(uint8_t rc_data[RC_DATA_NUM], uint32_t timeout){
 }
 
 static int ip;
-static uint8_t rcv_data[RC_DATA_NUM];
+static uint8_t rcv_data[RC_DATA_NUM] = {};
 rc_error_t DD_RC_element(uint8_t rc_data_el,uint8_t outdata[RC_DATA_NUM]){
   if(rc_data_el==0x80){
     ip=0;

@@ -16,7 +16,7 @@ int appInit(void);
 #define DD_USE_ENCODER2 1
 #define DD_NUM_OF_SV 0
 
-#define DD_USE_RC 1
+#define DD_USE_RC 0
 
 #include "DD_RC.h"
 #include "DD_LD.h"
@@ -70,7 +70,7 @@ int appInit(void);
 
 #define STRAIGHT_MAX_DUTY 8000
 
-#define SUS_LOW_DUTY 2150.0
+#define SUS_LOW_DUTY 1850.0
 
 #define ARM_UP_MD 4
 #define ARM_SPIN_MD 5 
@@ -147,7 +147,7 @@ typedef enum{
   MANUAL_SUSPENSION = 0,
   AUTO_FIRSTMECHA_UP= 1,
   AUTO_FIRSTMECHA_DOWN= 2,
-  AUTO_SHEETS= 3,
+  AUTO_SHEETS = 3,
   AUTO_TOWEL_ALL= 4,
   AUTO_TOWEL_3= 5,
   AUTO_TOWEL_2= 6,
