@@ -433,7 +433,7 @@ int appTask(void){
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;
   	  target_zahyou_1[1] = position[1];//5900.0;
-  	  target_zahyou_2[0] = -1750.0;
+  	  target_zahyou_2[0] = -1650.0;
   	  target_zahyou_2[1] = position[1];//5900.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
@@ -575,9 +575,9 @@ int appTask(void){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	    target_zahyou_1[0] = -1750.0;
+  	    target_zahyou_1[0] = -1650.0;
   	    target_zahyou_1[1] = position[1]+50;//6400.0;
-  	    target_zahyou_2[0] = -3350.0; //-3450.0;
+  	    target_zahyou_2[0] = -3250.0; //-3450.0;
   	    target_zahyou_2[1] = position[1]+50;//6400.0;
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
@@ -635,7 +635,7 @@ int appTask(void){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=100){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	    target_zahyou_1[0] = -3350;//-3250.0;
+  	    target_zahyou_1[0] = -3250;//-3250.0;
   	    target_zahyou_1[1] = position[1];//6100.0;
   	    target_zahyou_2[0] = 0.0;
   	    target_zahyou_2[1] = position[1];//6100.0;
@@ -704,7 +704,7 @@ int appTask(void){
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
-  	  target_zahyou_2[1] = 3900.0;
+  	  target_zahyou_2[1] = 3930.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_GREEN;
   	  }
@@ -772,7 +772,7 @@ int appTask(void){
   	    destination_adjust_timecount = 0;
   	    sus_motor_stop();
   	    odmetry_func[0] = true;
-  	    odmetry_func[1] = false;
+  	    odmetry_func[1] = true;
   	    odmetry_func[2] = true;
   	    odmetry_func_data[0] = 200.0;
   	    odmetry_func_data[1] = 3900.0;
@@ -894,7 +894,7 @@ int appTask(void){
   	}else{
 
 	  if(now_moving_situation != ARRIVED_TARGET){
-	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3300.0, true, true);
   	  }else{
 	    if(get_object_flag){
 	      next_motion_recet_flag = true;
@@ -1281,7 +1281,7 @@ int appTask(void){
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
   	  target_zahyou_1[0] = 180.0;
   	  target_zahyou_1[1] = position[1];//5900.0;
-  	  target_zahyou_2[0] = -1750.0;
+  	  target_zahyou_2[0] = -1650.0;
   	  target_zahyou_2[1] = position[1];//5900.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
@@ -1423,9 +1423,9 @@ int appTask(void){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	    target_zahyou_1[0] = -1750.0;
+  	    target_zahyou_1[0] = -1650.0;
   	    target_zahyou_1[1] = position[1]+50;//6400.0;
-  	    target_zahyou_2[0] = -3350.0;
+  	    target_zahyou_2[0] = -3250.0;
   	    target_zahyou_2[1] = position[1]+50;//6400.0;
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
@@ -1434,7 +1434,7 @@ int appTask(void){
   	    next_motion_recet_flag = false;
   	  }
   	}else{
-  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, false, true);
+  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, false, true);
   	  if(now_moving_situation == ARRIVED_TARGET){
   	    next_motion_recet_flag = true;
   	    moving_count++;
@@ -1482,7 +1482,7 @@ int appTask(void){
 	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = -3350.0;//position[0];
+  	  target_zahyou_1[0] = -3250.0;//position[0];
   	  target_zahyou_1[1] = position[1];//3700.0;
   	  target_zahyou_2[0] = -3150.0;//-3250.0;
   	  target_zahyou_2[1] = position[1];//3700.0;
@@ -1512,7 +1512,7 @@ int appTask(void){
 	  odmetry_func[0] = true;
   	  odmetry_func[1] = true;
   	  odmetry_func[2] = true;
-	  odmetry_func_data[0] = -3150.0 - position[0];
+	  odmetry_func_data[0] = -3250.0 - position[0];
 	  odmetry_func_data[1] = 5900.0 - position[1];
 	  odmetry_func_data[2] = 0.0;
 	  odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
