@@ -50,6 +50,7 @@ int DD_doTasks(void){
   int i;
   int ret;
   static int count = 0;
+  static bool first_flag = true;
 #if DD_NUM_OF_MD
   for( i = 0; i < DD_NUM_OF_MD; i++ ){
     ret = DD_send2MD(&g_md_h[i]);
@@ -92,6 +93,10 @@ int DD_doTasks(void){
     DD_receive2SS();
     count = 0;
   }
+  /* if(first_flag){ */
+  /*   DD_receive2SS(); */
+  /*   first_flag = false; */
+  /* } */
 #endif
 #if DD_USE_ENCODER1
   ret = DD_encoder1update();

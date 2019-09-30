@@ -2197,7 +2197,7 @@ MovingSituation_t go_to_target(double zahyou_1[2], double zahyou_2[2], double ma
       g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
       g_md_h[R_F_KUDO_MD].duty = 0;
       g_md_h[L_B_KUDO_MD].duty = 0;
-      if((g_SY_system_counter-error_wait) > 2000){
+      if((g_SY_system_counter-error_wait) > 1000){
 	error_wait_flag = false;
 	error_wait = 0;
 	error_flag = false;
@@ -3543,11 +3543,11 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
     matrix_init = true;
   }
 
-  if(g_md_h[L_B_KUDO_MD].duty==0 && g_md_h[R_F_KUDO_MD].duty==0){
-    bug_duty = 0;
-  }else{
+  /* if(g_md_h[L_B_KUDO_MD].duty==0 && g_md_h[R_F_KUDO_MD].duty==0){ */
+  /*   bug_duty = 0; */
+  /* }else{ */
     bug_duty = (g_md_h[L_B_KUDO_MD].duty+g_md_h[R_F_KUDO_MD].duty) / 2.0;
-  }
+  /* } */
   
   if(!cons_destination){
     for(i=0;i<4;i++){
@@ -3589,8 +3589,8 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
 	encoder_diff[1] = 0;
 	encoder_diff[2] = 0;
 	encoder_diff[3] = 0;
-	error = true;
-	return -1;
+	*error = true;
+	//return -1;
       }
       break;
     case PLUS_X:
@@ -3600,12 +3600,12 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
       encoder_diff[2] = I2C_Encoder(2,GET_DIFF, 0, &encoder_bug_left);
       encoder_diff[3] = I2C_Encoder(3,GET_DIFF, bug_duty, &encoder_bug_front);
       if(encoder_bug_right || encoder_bug_left || encoder_bug_front || encoder_bug_back){
-	error = true;
+	*error = true;
 	encoder_diff[0] = 0;
 	encoder_diff[1] = 0;
 	encoder_diff[2] = 0;
 	encoder_diff[3] = 0;
-	return -1;
+	//return -1;
       }
       /* if(encoder_bug_left || encoder_bug_right){ */
       /* 	encoder_diff[0] = 0; */
@@ -3901,7 +3901,7 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation, int duty, bool *e
     if(duty >= 1500){
       bug_compare_value = (int)( (((double)(duty)/20.0/*7.0*/)*(double)(g_SY_system_counter - recent_time[encoder_num])) );
     }else{
-      bug_compare_value = 300*(g_SY_system_counter - recent_time[encoder_num]);
+      bug_compare_value = 50*(g_SY_system_counter - recent_time[encoder_num]);
     }
     if(abs(diff) == 0){
       recent_value[encoder_num] = value;
@@ -3912,7 +3912,7 @@ int I2C_Encoder(int encoder_num, EncoderOperation_t operation, int duty, bool *e
       for(i=0; i<8; i++){
 	g_ld_h[0].mode[i] = D_LMOD_BLINK_BLUE;
       }
-      encoder_bug = true;
+      *encoder_bug = true;
     }else{
       recent_diff[encoder_num] = diff;
       recent_value[encoder_num] = value;

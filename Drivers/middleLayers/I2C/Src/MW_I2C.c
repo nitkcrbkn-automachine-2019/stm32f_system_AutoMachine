@@ -76,9 +76,9 @@ int32_t MW_I2C1Receive(uint8_t address, uint8_t *data, uint16_t size){
   return 0;
 }
 
-int32_t MW_I2C2Receive(uint8_t address, uint8_t *data, uint16_t size){
+int32_t MW_I2C2Receive(uint8_t address, const uint8_t *data, uint16_t size){
   if(had_completed_rx){ //受信完了フラグが立っていれば受信を行う
-    if( HAL_I2C_Master_Receive_DMA(&hi2c2, address << 1, data, size) != HAL_OK ){
+    if( HAL_I2C_Master_Receive_DMA(&hi2c2, address << 1, (uint8_t*)data, size) != HAL_OK ){
       return -1;
     }
     had_completed_rx = false; //受信完了フラグを下げる

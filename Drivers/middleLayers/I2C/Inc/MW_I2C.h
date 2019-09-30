@@ -61,7 +61,7 @@ void MW_SetI2CClockSpeed(i2cid_t id,uint32_t ClockSpeed);
 int32_t MW_I2C1Transmit(uint8_t address,const uint8_t *data,uint16_t size);
 int32_t MW_I2C2Transmit(uint8_t address,const uint8_t *data,uint16_t size);
 int32_t MW_I2C1Receive(uint8_t address,uint8_t *data,uint16_t size);
-int32_t MW_I2C2Receive(uint8_t address,uint8_t *data,uint16_t size);
+int32_t MW_I2C2Receive(uint8_t address,const uint8_t *data,uint16_t size);
 void MW_I2C2TransitionCompletedCallBack(void);
 void MW_I2C2ReceptionCompletedCallBack(void);
 
