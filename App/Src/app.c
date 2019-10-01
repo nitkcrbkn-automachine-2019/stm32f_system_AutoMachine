@@ -170,6 +170,7 @@ int appTask(void){
   static GameZone_t game_zone = BLUE_ZONE;
 
   static bool get_object_flag = false;
+  static bool get_object_zeneba_flag = false;
   static GetObject_t get_object_mode = GETTING_NOW;
 
   static int adjust_timecount = 0;
@@ -207,10 +208,13 @@ int appTask(void){
     is_pressed_recet_flag = true;
     p_recet_flag = false;
   }
-  if(PANEL_ZONE_SW()){
-    game_zone = RED_ZONE;
-  }else{
-    game_zone = BLUE_ZONE;
+
+  if(is_pressed_recet_flag){
+    if(PANEL_ZONE_SW()){
+      game_zone = RED_ZONE;
+    }else{
+      game_zone = BLUE_ZONE;
+    }
   }
   
   if(__RC_ISPRESSED_UP(g_rc_data) && up_flag){
@@ -255,22 +259,37 @@ int appTask(void){
   switch(now_mode){
   case NO_OPERATION:////////////////////////////////////////////
     if(is_pressed_recet_flag){
-      g_ld_h[0].mode[6] = D_LMOD_NONE;
-      g_ld_h[0].mode[7] = D_LMOD_NONE;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RED;
+	g_ld_h[0].mode[7] = D_LMOD_RED;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_BLUE;
+	g_ld_h[0].mode[7] = D_LMOD_BLUE;
+      }
     }
     all_motor_stop();
     break;
   case STOP_EVERYTHING:
     if(is_pressed_recet_flag){
-      g_ld_h[0].mode[6] = D_LMOD_NONE;
-      g_ld_h[0].mode[7] = D_LMOD_NONE;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RED;
+	g_ld_h[0].mode[7] = D_LMOD_RED;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_BLUE;
+	g_ld_h[0].mode[7] = D_LMOD_BLUE;
+      }
     }
     all_motor_stop();
     break;//////////////////////////////////////////////////////
   case AUTO_FIRSTMECHA_UP:
     if(is_pressed_recet_flag){
-      g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
-      g_ld_h[0].mode[7] = D_LMOD_BLINK_YELLOW;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_INCREMENT;
+	g_ld_h[0].mode[6] = D_LMOD_BLINK_YELLOW;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
+	g_ld_h[0].mode[7] = D_LMOD_BLINK_YELLOW;
+      }
       first_up_mecha_move(FIRST_UP_MECHA_STOP);
       first_up_mecha_situ  = FIRST_UP_MECHA_UP;
       first_up_mecha_flag = true;
@@ -286,8 +305,13 @@ int appTask(void){
     break;///////////////////////////////////////////////////////
   case AUTO_FIRSTMECHA_DOWN:
     if(is_pressed_recet_flag){
-      g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
-      g_ld_h[0].mode[7] = D_LMOD_BLINK_GREEN;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_INCREMENT;
+	g_ld_h[0].mode[6] = D_LMOD_BLINK_GREEN;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
+	g_ld_h[0].mode[7] = D_LMOD_BLINK_GREEN;
+      }
       first_up_mecha_move(FIRST_UP_MECHA_STOP);
       first_up_mecha_situ  = FIRST_UP_MECHA_DOWN;
       first_up_mecha_flag = true;
@@ -324,8 +348,13 @@ int appTask(void){
       arm_mecha_move(GET_CLIP, 1);
       get_object(SET_RELEASE_POSI, 0, false, false,false, 1);
 
-      g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
-      g_ld_h[0].mode[7] = D_LMOD_INCREMENT;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[6] = D_LMOD_INCREMENT;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[7] = D_LMOD_INCREMENT;
+      }
     }
     if(is_pressed_start_flag){
       switch(moving_count){
@@ -370,7 +399,7 @@ int appTask(void){
   	  destination_adjust_timecount = g_SY_system_counter;
   	}else{
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) < 2300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) < 2500){
   	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
   	    /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
   	    /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
@@ -378,7 +407,7 @@ int appTask(void){
   	    /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
   	    /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
   	    /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3500){
 	    g_ab_h[0].dat |= AB_UPMECHA_ON; ///////////////////////////////////////////////
   	    steering_spin_to_target(120+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(120+L_B_DEG_ADJUST,2);
@@ -386,7 +415,7 @@ int appTask(void){
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4500){
   	    steering_spin_to_target(60+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(60+L_B_DEG_ADJUST,2);
   	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
@@ -395,7 +424,7 @@ int appTask(void){
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
   	  }
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4500){
 	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[R_F_KUDO_MD].duty = 0;
@@ -431,7 +460,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 180.0;
+  	  target_zahyou_1[0] = 180.0;/////////////if ok naosu///////////////////////////////////////////////////////////////////////////
   	  target_zahyou_1[1] = position[1];//5900.0;
   	  target_zahyou_2[0] = -1650.0;
   	  target_zahyou_2[1] = position[1];//5900.0;
@@ -576,9 +605,9 @@ int appTask(void){
   	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	    target_zahyou_1[0] = -1650.0;
-  	    target_zahyou_1[1] = position[1]+50;//6400.0;
+  	    target_zahyou_1[1] = position[1];//+50;//6400.0;
   	    target_zahyou_2[0] = -3250.0; //-3450.0;
-  	    target_zahyou_2[1] = position[1]+50;//6400.0;
+  	    target_zahyou_2[1] = position[1];//+50;//6400.0;
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
   	    }
@@ -687,12 +716,13 @@ int appTask(void){
       next_motion_recet_flag = true;
       arm_mecha_mode = ARM_SPIN_NOW;
       get_object_flag = false;
+      get_object_zeneba_flag = false;
 
       all_motor_stop();
       moving_count = 0;
       arm_mecha_move(GET_CLIP, 1);
       get_object(SET_RELEASE_POSI, 0, false, false,false, 1);
-      
+
       g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
       g_ld_h[0].mode[7] = D_LMOD_RAINBOW;
     }
@@ -704,7 +734,7 @@ int appTask(void){
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = 0.0;
   	  target_zahyou_2[0] = 0.0;
-  	  target_zahyou_2[1] = 3930.0;
+  	  target_zahyou_2[1] = 3900.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_GREEN;
   	  }
@@ -728,10 +758,17 @@ int appTask(void){
       case 1: //角度あわせ
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	  target_zahyou_1[0] = 0.0;
-  	  target_zahyou_1[1] = position[1];//5700.0;
-  	  target_zahyou_2[0] = 2000.0;
-  	  target_zahyou_2[1] = position[1];//5700.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = 0.0;
+	    target_zahyou_1[1] = position[1];//5700.0;
+	    target_zahyou_2[0] = -2000.0;
+	    target_zahyou_2[1] = position[1];//5700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = 0.0;
+	    target_zahyou_1[1] = position[1];//5700.0;
+	    target_zahyou_2[0] = 2000.0;
+	    target_zahyou_2[1] = position[1];//5700.0;
+	  }
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_RED;
   	  }
@@ -739,7 +776,7 @@ int appTask(void){
   	  destination_adjust_timecount = g_SY_system_counter;
   	}else{
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) < 2300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) < 2500){
   	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
   	    /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
   	    /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
@@ -747,23 +784,33 @@ int appTask(void){
   	    /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
   	    /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
   	    /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3500){
   	    steering_spin_to_target(120+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(120+L_B_DEG_ADJUST,2);
-  	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
-  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    if(game_zone == RED_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	    }else if(game_zone == BLUE_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    }
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4500){
   	    steering_spin_to_target(60+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(60+L_B_DEG_ADJUST,2);
-  	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
-  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    if(game_zone == RED_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	    }else if(game_zone == BLUE_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    }
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
   	  }
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4500){
 	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[R_F_KUDO_MD].duty = 0;
@@ -774,7 +821,11 @@ int appTask(void){
   	    odmetry_func[0] = true;
   	    odmetry_func[1] = true;
   	    odmetry_func[2] = true;
-  	    odmetry_func_data[0] = 200.0;
+	    if(game_zone == RED_ZONE){
+	      odmetry_func_data[0] = -200.0;
+	    }else if(game_zone == BLUE_ZONE){
+	      odmetry_func_data[0] = 200.0;
+	    }
   	    odmetry_func_data[1] = 3900.0;
   	    odmetry_func_data[2] = 0.0;
   	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
@@ -799,10 +850,18 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 180.0;//230.0;
-  	  target_zahyou_1[1] = position[1];//5700.0;
-  	  target_zahyou_2[0] = -1750.0;
-  	  target_zahyou_2[1] = position[1];//5700.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = -200.0;//180.0;//230.0;
+	    target_zahyou_1[1] = position[1];//5700.0;
+	    target_zahyou_2[0] = 1750.0;
+	    target_zahyou_2[1] = position[1];//5700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = 200.0;//180.0;//230.0;
+	    target_zahyou_1[1] = position[1];//5700.0;
+	    target_zahyou_2[0] = -1750.0;
+	    target_zahyou_2[1] = position[1];//5700.0;
+	  }
+  	  
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
   	  }
@@ -825,7 +884,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
-  	  target_zahyou_1[1] = 3900.0;//position[1];
+  	  target_zahyou_1[1] = position[1];//3900.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
   	  target_zahyou_2[1] = 4600.0;
   	  for(i=0; i<8; i++){
@@ -851,9 +910,9 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1750.0;
-  	  target_zahyou_1[1] = 4600.0;//position[1];
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1750.0;
-  	  target_zahyou_2[1] = 4100.0;
+  	  target_zahyou_2[1] = 4000.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
   	  }
@@ -875,6 +934,9 @@ int appTask(void){
       case 5://2枚目ポジションへ横移動
 	if(!get_object_flag){
 	  get_object_mode = get_object(SET_RELEASE_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_ZENEBA_NOW){
+	    get_object_zeneba_flag = true;
+	  }
 	  if(get_object_mode == GETTING_END){
 	    get_object_flag = true;
 	  }
@@ -882,10 +944,17 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = -1750.0;//position[0];
-  	  target_zahyou_1[1] = position[1];//3700.0;
-  	  target_zahyou_2[0] = -2450.0;//-2550.0
-  	  target_zahyou_2[1] = position[1];//3700.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = 1750.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = 2550.0;//-2450.0;//-2550.0
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = -1750.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = -2550.0;//-2450.0;//-2550.0
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
   	  }
@@ -900,15 +969,26 @@ int appTask(void){
 	      next_motion_recet_flag = true;
 	      moving_count++;
 	      get_object_flag = false;
+	      get_object_zeneba_flag = false;
+	    }else if(get_object_zeneba_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_zeneba_flag = true;
 	    }
   	  }
   	}
       	break;
       case 6://2枚目ポジションへ直進
+	if(!get_object_flag && get_object_zeneba_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
-  	  target_zahyou_1[1] = position[1];
+  	  target_zahyou_1[1] = position[1];//4000.0;
   	  target_zahyou_2[0] = position[0];//-2550.0;
   	  target_zahyou_2[1] = 4600.0;
   	  for(i=0; i<8; i++){
@@ -926,6 +1006,8 @@ int appTask(void){
 	    if((g_SY_system_counter-adjust_timecount) > 500){
 	      next_motion_recet_flag = true;
 	      moving_count++;
+	      get_object_zeneba_flag = false;
+	      get_object_flag = false;
 	    }
   	  }
   	}
@@ -934,9 +1016,9 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-2550.0;
-  	  target_zahyou_1[1] = 4600.0;//position[1];
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-2550.0;
-  	  target_zahyou_2[1] = 4100.0;
+  	  target_zahyou_2[1] = 4000.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
   	  }
@@ -958,6 +1040,9 @@ int appTask(void){
       case 8://3枚目ポジションへ横移動
 	if(!get_object_flag){
 	  get_object_mode = get_object(SET_RELEASE_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_ZENEBA_NOW){
+	    get_object_zeneba_flag = true;
+	  }
 	  if(get_object_mode == GETTING_END){
 	    get_object_flag = true;
 	  }
@@ -965,9 +1050,17 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = -2550.0;//position[0];
-  	  target_zahyou_1[1] = position[1];//3700.0;
-  	  target_zahyou_2[0] = -3150.0;//-3250.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = 2550.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = 3250.0;//-3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = -2550.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = -3250.0;//-3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }
   	  target_zahyou_2[1] = position[1];//3700.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
@@ -982,15 +1075,26 @@ int appTask(void){
 	      next_motion_recet_flag = true;
 	      moving_count++;
 	      get_object_flag = false;
+	      get_object_zeneba_flag = false;
+	    }else if(get_object_zeneba_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_zeneba_flag = true;
 	    }
   	  }
   	}
       	break;
       case 9://3枚目ポジションへ直進
+	if(!get_object_flag && get_object_zeneba_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, 1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
-  	  target_zahyou_1[1] = position[1];
+  	  target_zahyou_1[1] = position[1];//4000.0;
   	  target_zahyou_2[0] = position[0];//-3250.0;
   	  target_zahyou_2[1] = 4600.0;
   	  for(i=0; i<8; i++){
@@ -1006,6 +1110,8 @@ int appTask(void){
 	    g_ab_h[0].dat |= AB_RIGHT_ON;
 	    g_ab_h[0].dat |= AB_LEFT_ON;
 	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      get_object_zeneba_flag = false;
+	      get_object_flag = false;
 	      next_motion_recet_flag = true;
 	      moving_count++;
 	    }
@@ -1016,9 +1122,9 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-3250.0;
-  	  target_zahyou_1[1] = 4600.0;//position[1];
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-3250.0;
-  	  target_zahyou_2[1] = 4100.0;
+  	  target_zahyou_2[1] = 4000.0;
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
   	  }
@@ -1040,12 +1146,19 @@ int appTask(void){
       case 11:
   	if(next_motion_recet_flag){
   	  next_motion_delay_count++;
-  	  if(next_motion_delay_count>=100){
+  	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	    target_zahyou_1[0] = -3300;//-3250.0;
-  	    target_zahyou_1[1] = position[1];//6100.0;
-  	    target_zahyou_2[0] = 0.0;
-  	    target_zahyou_2[1] = position[1];//6100.0;
+	    if(game_zone == RED_ZONE){
+	      target_zahyou_1[0] = 3300;//-3250.0;
+	      target_zahyou_1[1] = position[1];//6100.0;
+	      target_zahyou_2[0] = 0.0;
+	      target_zahyou_2[1] = position[1];//6100.0;
+	    }else if(game_zone == BLUE_ZONE){
+	      target_zahyou_1[0] = -3300;//-3250.0;
+	      target_zahyou_1[1] = position[1];//6100.0;
+	      target_zahyou_2[0] = 0.0;
+	      target_zahyou_2[1] = position[1];//6100.0;
+	    }
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
   	    }
@@ -1064,7 +1177,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = 4100.0;//position[1];
+  	  target_zahyou_1[1] = 4000.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
   	  target_zahyou_2[1] = 0.0;
   	  for(i=0; i<8; i++){
@@ -1082,7 +1195,7 @@ int appTask(void){
       }
     }
     break;
-  case AUTO_TOWEL_3:///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  case AUTO_TOWEL_1:///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if(is_pressed_recet_flag){
       I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
@@ -1099,8 +1212,13 @@ int appTask(void){
       moving_count = 0;
       get_object(SET_RELEASE_POSI, 0, false, false,false, 1);
 
-      g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
-      g_ld_h[0].mode[7] = D_LMOD_RED;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[6] = D_LMOD_RED;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[7] = D_LMOD_RED;
+      }
     }
     if(is_pressed_start_flag){
       
@@ -1123,14 +1241,19 @@ int appTask(void){
       moving_count = 0;
       get_object(SET_RELEASE_POSI, 0, false, false,false, 1);
       
-      g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
-      g_ld_h[0].mode[7] = D_LMOD_YELLOW;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[6] = D_LMOD_YELLOW;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[7] = D_LMOD_YELLOW;
+      }
     }
     if(is_pressed_start_flag){
       
     }
     break;
-  case AUTO_TOWEL_1:///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  case AUTO_TOWEL_3:///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if(is_pressed_recet_flag){
       I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
@@ -1147,8 +1270,13 @@ int appTask(void){
       moving_count = 0;
       get_object(SET_RELEASE_POSI, 0, false, false,false, 1);
 
-      g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
-      g_ld_h[0].mode[7] = D_LMOD_BLUE;
+      if(game_zone == RED_ZONE){
+	g_ld_h[0].mode[7] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[6] = D_LMOD_BLUE;
+      }else if(game_zone == BLUE_ZONE){
+	g_ld_h[0].mode[6] = D_LMOD_RAINBOW;
+	g_ld_h[0].mode[7] = D_LMOD_BLUE;
+      }
     }
     if(is_pressed_start_flag){
       
@@ -1156,6 +1284,11 @@ int appTask(void){
     break;
   case AUTO_SHEETS_TOWEL:///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     if(is_pressed_recet_flag){
+      g_ab_h[0].dat &= AB_RIGHT_OFF;
+      g_ab_h[0].dat &= AB_LEFT_OFF;
+      g_ab_h[0].dat &= AB_CENTER_OFF;
+      g_ab_h[0].dat &= AB_UPMECHA_OFF;
+      
       I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
       I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
@@ -1166,6 +1299,7 @@ int appTask(void){
       next_motion_recet_flag = true;
       arm_mecha_mode = ARM_SPIN_NOW;
       get_object_flag = false;
+      get_object_zeneba_flag = false;
 
       turn_situation = TURN_NOW;
       all_motor_stop();
@@ -1207,6 +1341,11 @@ int appTask(void){
       case 1://角度あわせ
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_2[0] = -2000.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_2[0] = 2000.0;
+	  }
   	  target_zahyou_1[0] = 0.0;
   	  target_zahyou_1[1] = position[1];//5900.0;
   	  target_zahyou_2[0] = 2000.0;
@@ -1218,7 +1357,7 @@ int appTask(void){
   	  destination_adjust_timecount = g_SY_system_counter;
   	}else{
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) < 2300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) < 2500){
   	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
   	    /* steering_spin_to_target(90+R_F_DEG_ADJUST,1); */
   	    /* steering_spin_to_target(90+L_B_DEG_ADJUST,2); */
@@ -1226,24 +1365,34 @@ int appTask(void){
   	    /* g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD; */
   	    /* g_md_h[R_F_KUDO_MD].duty = (int)round((2000)*L_B_KUDO_ADJUST); */
   	    /* g_md_h[L_B_KUDO_MD].duty = (int)round((2000)*R_F_KUDO_ADJUST); */
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 3500){
 	    g_ab_h[0].dat |= AB_UPMECHA_ON; ///////////////////////////////////////////////
   	    steering_spin_to_target(120+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(120+L_B_DEG_ADJUST,2);
-  	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
-  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    if(game_zone == RED_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	    }else if(game_zone == BLUE_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    }
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
-  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4300){
+  	  }else if((g_SY_system_counter-destination_adjust_timecount) < 4500){
   	    steering_spin_to_target(60+R_F_DEG_ADJUST,1);
   	    steering_spin_to_target(60+L_B_DEG_ADJUST,2);
-  	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
-  	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    if(game_zone == RED_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_FORWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_BACKWARD;
+	    }else if(game_zone == BLUE_ZONE){
+	      g_md_h[R_F_KUDO_MD].mode = D_MMOD_BACKWARD;
+	      g_md_h[L_B_KUDO_MD].mode = D_MMOD_FORWARD;
+	    }
   	    g_md_h[R_F_KUDO_MD].duty = (int)round((3500)*L_B_KUDO_ADJUST);
   	    g_md_h[L_B_KUDO_MD].duty = (int)round((3500)*R_F_KUDO_ADJUST);
   	  }
 
-  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4300){
+  	  if((g_SY_system_counter-destination_adjust_timecount) >= 4500){
 	    g_md_h[R_F_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[L_B_KUDO_MD].mode = D_MMOD_BRAKE;
   	    g_md_h[R_F_KUDO_MD].duty = 0;
@@ -1254,7 +1403,11 @@ int appTask(void){
   	    odmetry_func[0] = true;
   	    odmetry_func[1] = true;
   	    odmetry_func[2] = true;
-  	    odmetry_func_data[0] = 200.0;
+	    if(game_zone == RED_ZONE){
+	      odmetry_func_data[0] = -200.0;
+	    }else if(game_zone == BLUE_ZONE){
+	      odmetry_func_data[0] = 200.0;
+	    }
   	    odmetry_func_data[1] = 5900.0;
   	    odmetry_func_data[2] = 0.0;
   	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
@@ -1279,10 +1432,17 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = 180.0;
-  	  target_zahyou_1[1] = position[1];//5900.0;
-  	  target_zahyou_2[0] = -1650.0;
-  	  target_zahyou_2[1] = position[1];//5900.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = -200.0;//180.0;
+	    target_zahyou_1[1] = position[1];//5900.0;
+	    target_zahyou_2[0] = 1750.0;//-1650.0;
+	    target_zahyou_2[1] = position[1];//5900.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = 200.0;//180.0;
+	    target_zahyou_1[1] = position[1];//5900.0;
+	    target_zahyou_2[0] = -1750.0;//-1650.0;
+	    target_zahyou_2[1] = position[1];//5900.0;
+	  }
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
   	  }
@@ -1314,7 +1474,7 @@ int appTask(void){
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
-  	  target_zahyou_1[1] = 5900.0;//position[1];
+  	  target_zahyou_1[1] = position[1];//5900.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
   	  target_zahyou_2[1] = 6600.0;
   	  for(i=0; i<8; i++){
@@ -1364,15 +1524,21 @@ int appTask(void){
       case 6://洗濯バサミゲット
 	if(!get_object_flag){
 	  get_object_mode = get_object(SET_RELEASE_POSI, -1, true, true, true, 0);
-	  if(get_object_mode == GETTING_END){
-	    get_object_flag = false;
+	  if(get_object_mode == GETTING_ZENEBA_NOW){
 	    next_motion_recet_flag = true;
 	    moving_count++;
-	    get_object_mode = GETTING_NOW;
+	    //get_object_mode = GETTING_NOW;
+	    //get_object_flag = true;
 	  }
 	}
 	break;
       case 7://洗濯バサミかけるポジションへ直進
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
@@ -1392,13 +1558,25 @@ int appTask(void){
   	}
       	break;
       case 8://arm下げて洗濯バサミつける
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_UP_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
 	if(arm_mecha_mode != ARM_SPIN_END){
 	  arm_mecha_mode = arm_mecha_move(SET_CLIP_POSI, 0);
 	}else{
-	  g_ab_h[0].dat |= AB_RIGHT_ON;
+	  if(game_zone == RED_ZONE){
+	    g_ab_h[0].dat |= AB_LEFT_ON;
+	  }else if(game_zone == BLUE_ZONE){
+	    g_ab_h[0].dat |= AB_RIGHT_ON;
+	  }
 	  next_motion_recet_flag = true;
 	  moving_count++;
 	  arm_mecha_mode = ARM_SPIN_NOW;
+	  get_object_mode = GETTING_NOW;
+	  get_object_flag = false;
 	}
 	break;
       case 9://armちょっとあげる
@@ -1423,10 +1601,17 @@ int appTask(void){
   	  next_motion_delay_count++;
   	  if(next_motion_delay_count>=50){
   	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
-  	    target_zahyou_1[0] = -1650.0;
-  	    target_zahyou_1[1] = position[1]+50;//6400.0;
-  	    target_zahyou_2[0] = -3250.0;
-  	    target_zahyou_2[1] = position[1]+50;//6400.0;
+	    if(game_zone == RED_ZONE){
+	      target_zahyou_1[0] = 1750.0;//-1650.0;
+	      target_zahyou_1[1] = position[1];//+50;//6400.0;
+	      target_zahyou_2[0] = 3250.0;
+	      target_zahyou_2[1] = position[1];//+50;//6400.0;
+	    }else if(game_zone == BLUE_ZONE){
+	      target_zahyou_1[0] = -1750.0;//-1650.0;
+	      target_zahyou_1[1] = position[1];//+50;//6400.0;
+	      target_zahyou_2[0] = -3250.0;
+	      target_zahyou_2[1] = position[1];//+50;//6400.0;
+	    }
   	    for(i=0; i<8; i++){
   	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
   	    }
@@ -1478,14 +1663,27 @@ int appTask(void){
   	  }
   	}
       	break;
-      case 13:
+      case 13://ちょっとずれてバスタオルよう
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
 	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
-  	  target_zahyou_1[0] = -3250.0;//position[0];
-  	  target_zahyou_1[1] = position[1];//3700.0;
-  	  target_zahyou_2[0] = -3150.0;//-3250.0;
-  	  target_zahyou_2[1] = position[1];//3700.0;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = 3250.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = 3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = -3250.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = -3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }
   	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
   	  }
@@ -1500,35 +1698,342 @@ int appTask(void){
 	    get_object_flag = false;
   	  }
   	}
+	break;
       case 14://ターーーーーーーーーーーーーーん
-	odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
 	if(turn_situation != TURN_END){
+	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
 	  turn_situation = turn_robot(position);
 	  for(i=0; i<8; i++){
   	    g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
   	  }
 	}else{
-	  turn_situation = TURN_NOW;
-	  odmetry_func[0] = true;
-  	  odmetry_func[1] = true;
-  	  odmetry_func[2] = true;
-	  odmetry_func_data[0] = -3250.0 - position[0];
-	  odmetry_func_data[1] = 5900.0 - position[1];
-	  odmetry_func_data[2] = 0.0;
-	  odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
-	  next_motion_recet_flag = true;
-	  moving_count++;
+	  if(get_object_flag){
+	    turn_situation = TURN_NOW;
+	    odmetry_func[0] = true;
+	    odmetry_func[1] = true;
+	    odmetry_func[2] = true;
+	    if(game_zone == RED_ZONE){
+	      odmetry_func_data[0] = 3150.0 - position[0];
+	    }else if(game_zone == BLUE_ZONE){
+	      odmetry_func_data[0] = -3150.0 - position[0];
+	    }
+	    odmetry_func_data[1] = 5900.0 - position[1];
+	    odmetry_func_data[2] = 0.0;
+	    odmetry_position(position,0,true,odmetry_func,odmetry_func_data,false,PLUS_X,&to_error_flag);
+	    next_motion_recet_flag = true;
+	    moving_count++;
+	    get_object_flag = false;
+	  }
 	}
       	break;
-      case 15:
+      case 15://シーツからの一枚目ポジションへ直進
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-1650.0;
+  	  target_zahyou_1[1] = position[1];//0.0;//position[1];
+  	  target_zahyou_2[0] = position[0];//-1650.0;
+  	  target_zahyou_2[1] = 700.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_RIGHT_ON;
+	    g_ab_h[0].dat |= AB_LEFT_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
+  	  }
+  	}
+      	break;
+      case 16://シーツからの一枚目ポジションから後退
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-1750.0;
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
+  	  target_zahyou_2[0] = position[0];//-1750.0;
+  	  target_zahyou_2[1] = 100.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_CENTER_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
+  	  }
+  	}
+      	break;
+      case 17://シーツからの2枚目ポジションへ横移動
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_ZENEBA_NOW){
+	    get_object_zeneba_flag = true;
+	  }
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = 750.0;//-2450.0;//-2550.0
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = -750.0;//-2450.0;//-2550.0
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3300.0, true, true);
+  	  }else{
+	    if(get_object_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_flag = false;
+	      get_object_zeneba_flag = false;
+	    }else if(get_object_zeneba_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_zeneba_flag = true;
+	    }
+  	  }
+  	}
+      	break;
+      case 18://シーツからの2枚目ポジションへ直進
+	if(!get_object_flag && get_object_zeneba_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-2550.0;
+  	  target_zahyou_1[1] = position[1];//4000.0;
+  	  target_zahyou_2[0] = position[0];//-2550.0;
+  	  target_zahyou_2[1] = 700.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_RIGHT_ON;
+	    g_ab_h[0].dat |= AB_LEFT_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_zeneba_flag = false;
+	      get_object_flag = false;
+	    }
+  	  }
+  	}
+      	break;
+      case 19://シーツからの2枚目ポジションから後退
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-2550.0;
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
+  	  target_zahyou_2[0] = position[0];//-2550.0;
+  	  target_zahyou_2[1] = 100.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_CENTER_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
+  	  }
+  	}
+      	break;
+      case 20://シーツからの3枚目ポジションへ横移動
+	if(!get_object_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_ZENEBA_NOW){
+	    get_object_zeneba_flag = true;
+	  }
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  //g_ab_h[0].dat |= AB_UPMECHA_ON;
+	  if(game_zone == RED_ZONE){
+	    target_zahyou_1[0] = 750.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = 1500.0;//-3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }else if(game_zone == BLUE_ZONE){
+	    target_zahyou_1[0] = -750.0;//position[0];
+	    target_zahyou_1[1] = position[1];//3700.0;
+	    target_zahyou_2[0] = -1500.0;//-3150.0;//-3250.0;
+	    target_zahyou_2[1] = position[1];//3700.0;
+	  }
+  	  target_zahyou_2[1] = position[1];//3700.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_BLUE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
+  	  }else{
+	    if(get_object_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_flag = false;
+	      get_object_zeneba_flag = false;
+	    }else if(get_object_zeneba_flag){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	      get_object_zeneba_flag = true;
+	    }
+  	  }
+  	}
+      	break;
+      case 21://シーツからの3枚目ポジションへ直進
+	if(!get_object_flag && get_object_zeneba_flag){
+	  get_object_mode = get_object(SET_RELEASE_POSI, -1, false, false, false, 0);
+	  if(get_object_mode == GETTING_END){
+	    get_object_flag = true;
+	  }
+	}
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-3250.0;
+  	  target_zahyou_1[1] = position[1];//4000.0;
+  	  target_zahyou_2[0] = position[0];//-3250.0;
+  	  target_zahyou_2[1] = 700.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_YELLOW;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 3000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_RIGHT_ON;
+	    g_ab_h[0].dat |= AB_LEFT_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      get_object_zeneba_flag = false;
+	      get_object_flag = false;
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
+  	  }
+  	}
+      	break;
+      case 22://シーツからの3枚目ポジションから後退
+  	if(next_motion_recet_flag){
+  	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+  	  target_zahyou_1[0] = position[0];//-3250.0;
+  	  target_zahyou_1[1] = position[1];//4600.0;//position[1];
+  	  target_zahyou_2[0] = position[0];//-3250.0;
+  	  target_zahyou_2[1] = 100.0;
+  	  for(i=0; i<8; i++){
+  	    g_ld_h[0].mode[i] = D_LMOD_PURPLE;
+  	  }
+  	  next_motion_recet_flag = false;
+	  now_moving_situation = PLUS_ACCELERATING;
+  	}else{
+	  if(now_moving_situation != ARRIVED_TARGET){
+	    now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 2000.0, true, true);
+	    adjust_timecount = g_SY_system_counter;
+  	  }else{
+	    g_ab_h[0].dat |= AB_CENTER_ON;
+	    if((g_SY_system_counter-adjust_timecount) > 500){
+	      next_motion_recet_flag = true;
+	      moving_count++;
+	    }
+  	  }
+  	}
+      	break;
+      case 23://シーツからの3枚目ポジションから横へ
+  	if(next_motion_recet_flag){
+  	  next_motion_delay_count++;
+  	  if(next_motion_delay_count>=50){
+  	    odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
+	    if(game_zone == RED_ZONE){
+	      target_zahyou_1[0] = 1500.0;//-3250.0;
+	      target_zahyou_1[1] = position[1];//6100.0;
+	      target_zahyou_2[0] = 3300.0;
+	      target_zahyou_2[1] = position[1];//6100.0;
+	    }else if(game_zone == BLUE_ZONE){
+	      target_zahyou_1[0] = -1500.0;//-3250.0;
+	      target_zahyou_1[1] = position[1];//6100.0;
+	      target_zahyou_2[0] = -3300.0;
+	      target_zahyou_2[1] = position[1];//6100.0;
+	    }
+  	    for(i=0; i<8; i++){
+  	      g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+  	    }
+  	    next_motion_delay_count = 0;
+  	    next_motion_recet_flag = false;
+  	  }
+  	}else{
+  	  now_moving_situation = go_to_target(target_zahyou_1, target_zahyou_2, 4000.0, true, true);
+  	  if(now_moving_situation == ARRIVED_TARGET){
+  	    next_motion_recet_flag = true;
+  	    moving_count++;
+  	  }
+  	}
+      	break;
+      case 24://シーツからの帰宅
   	if(next_motion_recet_flag){
   	  odmetry_position(position,0,false,odmetry_func,position,false,PLUS_X,&to_error_flag);
   	  target_zahyou_1[0] = position[0];//-1650.0;
   	  target_zahyou_1[1] = 0.0;//position[1];
   	  target_zahyou_2[0] = position[0];//-1650.0;
-  	  target_zahyou_2[1] = 700.0;
+  	  target_zahyou_2[1] = 5800.0;
   	  for(i=0; i<8; i++){
-  	    g_ld_h[0].mode[i] = D_LMOD_BINARY_BLUE;
+  	    g_ld_h[0].mode[i] = D_LMOD_BINARY_GREEN;
   	  }
   	  next_motion_recet_flag = false;
   	}else{
@@ -3432,7 +3937,7 @@ GetObject_t get_object(ArmMechaTarget_t end_position, int zeneba_destination, bo
   case 3:
     if((zeneba_mecha_mode != ZENEBA_SPIN_END) && (zeneba_destination != 0)){
       zeneba_mecha_mode = zeneba_mecha_move(zeneba_destination,0);
-      return_value = GETTING_NOW;
+      return_value = GETTING_ZENEBA_NOW;
     }else{
       if(get_hasami){
 	if(get_hasami_right) g_ab_h[0].dat &= AB_RIGHT_OFF;
@@ -3924,6 +4429,11 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
       position[i] = 0.0;
       recent_position[i] = 0.0;
     }
+    I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+
     return 0;
   }
 
@@ -3938,6 +4448,10 @@ int odmetry_position(double position[3], int recet, bool adjust_flag, bool adjus
 	}
       }
     }
+    I2C_Encoder(BACK_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(FRONT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(RIGHT_ENC, RESET_ENCODER_VALUE, 0, &testes);
+    I2C_Encoder(LEFT_ENC, RESET_ENCODER_VALUE, 0, &testes);
     return 0;
   }
   

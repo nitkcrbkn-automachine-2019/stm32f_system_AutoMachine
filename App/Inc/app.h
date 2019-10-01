@@ -226,8 +226,9 @@ typedef enum{
 
 typedef enum{
   GETTING_NOW = 0,
-  GETTING_END = 1,
-  GETTING_RECET = 2,
+  GETTING_ZENEBA_NOW = 1,
+  GETTING_END = 2,
+  GETTING_RECET = 3,
 }GetObject_t;
 
 
